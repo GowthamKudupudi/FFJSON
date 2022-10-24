@@ -33,7 +33,10 @@ FF_LOG_TYPE fflAllowedType = (FF_LOG_TYPE)(FFL_DEBUG | FFL_INFO);
 unsigned int fflAllowedLevel = 9;
 
 void test1() {
-   std::cout << "TestFFJSON test 1" << std::endl;
+   cout << "===================================================" << endl;
+   cout << "               TestFFJSON test 1                   " << endl;
+   cout << "===================================================" << endl;
+
    char cCurrentPath[FILENAME_MAX];
    
    if (!GetCurrentDir(cCurrentPath, sizeof (cCurrentPath))) {
@@ -138,6 +141,9 @@ void test1() {
    delete ao;
    cout << "3rd students Maths marks: " <<
    ffo2["studentsMarks"][2]["Maths"].prettyString() << endl;
+   if (ffo2["null"] == nullptr){
+      cout << "ffo2[\"null\"] == NULL" << endl;
+   }
    cout << "end of test" << endl;
    return;
 }
@@ -147,7 +153,10 @@ struct testStruct {
 };
 
 void test2() {
-   std::cout << "TestFFJSON test 2" << std::endl;
+   cout << "===================================================" << endl;
+   cout << "               TestFFJSON test 2                   " << endl;
+   cout << "===================================================" << endl;
+
    string fn = "/home/gowtham/Projects/ferrymediaserver/offpmpack.json";
    ifstream ifs(fn.c_str(), ios::in | ios::ate);
    if (ifs.is_open()) {
@@ -377,7 +386,7 @@ int main (int argc, char** argv) {
    ftsEnd.Update();
    ftsDiff = ftsEnd-ftsStart;
    std::cout << "%TEST_FINISHED% time=" << ftsDiff << " test1 (TestFFJSON)" << std::endl;
-   
+/*   
    std::cout << "%TEST_STARTED% test2 (TestFFJSON)\n" << std::endl;
    ftsStart.Update();
    test2();
@@ -462,7 +471,7 @@ int main (int argc, char** argv) {
    ftsEnd.Update();
    ftsDiff = ftsEnd - ftsStart;
    std::cout << "%TEST_FINISHED% time=" << ftsDiff << " test13 " << std::endl;
-   
+*/  
    ftsSuiteEnd.Update();
    ftsDiff = ftsSuiteEnd-ftsSuiteStart;
    std::cout << "%SUITE_FINISHED% time=" << ftsDiff << std::endl;

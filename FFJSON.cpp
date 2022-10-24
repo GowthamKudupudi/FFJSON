@@ -520,22 +520,23 @@ ObjBackyard:
 				int nind = getIndent(ffjson.c_str(), &i, indent);
                 ffpo.value = this;
 				ffpo.pObj = pObj;
-				FFJSON* obj = NULL;
+				FFJSON* obj = nullptr;
 				while (i < j) {
 					string index = to_string(val.array->size());
 					ffpo.name = &index;
-					obj = new FFJSON(ffjson, &i, nind, &ffpo);
+               obj = new FFJSON(ffjson, &i, nind, &ffpo);
 					if (obj->isType(NUL) && ffjson[i] == ']' && size == 0) {
 						delete obj;
-						obj = NULL;
-                        val.array->pop_back();
-                    }else if ((obj->isType(NUL) || obj->isType(UNDEFINED)) &&
-                              obj->isQType(NONE)) {
-                          delete obj;
-                        val.array->pop_back();
-                        val.array->push_back(NULL);
-                    }
-                    bool bLastObjIsMulLnStr = (obj && obj->isType(STRING) &&
+						obj = nullptr;
+                  val.array->pop_back();
+               } else if ((obj->isType(NUL) || obj->isType(UNDEFINED)) &&
+                          obj->isQType(NONE)) {
+                  delete obj;
+                  obj = nullptr;
+                  val.array->pop_back();
+                  val.array->push_back(NULL);
+               }
+               bool bLastObjIsMulLnStr = (obj && obj->isType(STRING) &&
 							m_uFM.m_bIsMultiLineArray && (ffjson[i] == '\t' ||
 							ffjson[i] == '\n' || ffjson[i] == '\r'));
 					while (ffjson[i] == ' ' && ffjson[i] == '\t')i++;
@@ -684,11 +685,11 @@ ObjBackyard:
 				int iis = bufvec.size() - 1;
 				while (ii < iis) {
 					memcpy(val.string + (100 * ii), bufvec[ii], 100);
-					delete bufvec[ii];
+					delete[] bufvec[ii];
 					ii++;
 				}
 				memcpy(val.string + (100 * ii), bufvec[ii], k + 1);
-				delete bufvec[ii];
+				delete[] bufvec[ii];
 				char* pNewLnPos = val.string;
 				char* pOldNewLnPos = NULL;
 				FeaturedMember fmWidth;
@@ -884,11 +885,12 @@ ObjBackyard:
 						}
 						if (path.length() > 0) {
 							ifstream ifs(path.c_str(), ios::in | ios::ate);
-                            setEFlag(FILE);
-                            FeaturedMember fm;fm.m_sFileName = new char[path.length()+1];
-                            strcpy(fm.m_sFileName, path.c_str());
-                            insertFeaturedMember(fm, FM_FILE);
-                            if (ifs.is_open()) {
+                     setEFlag(FILE);
+                     FeaturedMember fm;
+                     fm.m_sFileName = new char[path.length()+1];
+                     strcpy(fm.m_sFileName, path.c_str());
+                     insertFeaturedMember(fm, FM_FILE);
+                     if (ifs.is_open()) {
 								string ffjsonStr;
 								strObjMapInit();
 								ifs.seekg(0, ios::end);
@@ -913,8 +915,8 @@ ObjBackyard:
 								ifs.seekg(0, ios::beg);
 								ffjsonStr.append((istreambuf_iterator<char>(ifs)),
 										istreambuf_iterator<char>());
-                                ifs.close();
-                                if (t) {
+                        ifs.close();
+                        if (t) {
 									init(ffjsonStr, 0, -1);
 								} else {
 									init(ffjsonStr);
@@ -1574,7 +1576,7 @@ void FFJSON::destroyAllFeaturedMembers(bool bExemptQueries) {
 			m_uFM = m_uFM.m_pFMH->m_pFMH;
 			delete pFMHHolder;
 		}
-        iFMCount--;
+      iFMCount--;
 	}
 	if (isEFlagSet(HAS_CHILDREN) && (isType(OBJECT) || isType(ARRAY))) {
 		if (iFMCount == 1) {
@@ -1587,32 +1589,32 @@ void FFJSON::destroyAllFeaturedMembers(bool bExemptQueries) {
 			m_uFM = m_uFM.m_pFMH->m_pFMH;
 			delete pFMHHolder;
 		}
-        iFMCount--;
+      iFMCount--;
 	}
-    if (isQType(UPDATE) && !bExemptQueries) {
-        if (iFMCount == 1) {
-            m_uFM.m_pTimeStamp=NULL;
-        } else {
-            m_uFM.m_pFMH->m_uFM.m_pTimeStamp=NULL;
-            FeaturedMemHook* pFMHHolder = m_uFM.m_pFMH;
-            m_uFM = m_uFM.m_pFMH->m_pFMH;
-            delete pFMHHolder;
-        }
-        iFMCount--;
-    }
-    if (isEFlagSet(FILE)) {
-        if (iFMCount == 1) {
-            delete[] m_uFM.m_sFileName;
-        } else {
-            delete[] m_uFM.m_pFMH->m_uFM.m_sFileName;
-            FeaturedMemHook* pFMHHolder = m_uFM.m_pFMH;
-            m_uFM = m_uFM.m_pFMH->m_pFMH;
-            delete pFMHHolder;
-        }
-        iFMCount--;
-        clearEFlag(FILE);
-    }
-    setFMCount(iFMCount);
+   if (isQType(UPDATE) && !bExemptQueries) {
+      if (iFMCount == 1) {
+         m_uFM.m_pTimeStamp=NULL;
+      } else {
+         m_uFM.m_pFMH->m_uFM.m_pTimeStamp=NULL;
+         FeaturedMemHook* pFMHHolder = m_uFM.m_pFMH;
+         m_uFM = m_uFM.m_pFMH->m_pFMH;
+         delete pFMHHolder;
+      }
+      iFMCount--;
+   }
+   if (isEFlagSet(FILE)) {
+      if (iFMCount == 1) {
+         delete[] m_uFM.m_sFileName;
+      } else {
+         delete[] m_uFM.m_pFMH->m_uFM.m_sFileName;
+         FeaturedMemHook* pFMHHolder = m_uFM.m_pFMH;
+         m_uFM = m_uFM.m_pFMH->m_pFMH;
+         delete pFMHHolder;
+      }
+      iFMCount--;
+      clearEFlag(FILE);
+   }
+   setFMCount(iFMCount);
 }
 
 void FFJSON::deleteFeaturedMember(FeaturedMemType fmt) {
@@ -1936,7 +1938,7 @@ void FFJSON::freeObj(bool bAssignment) {
       case OBJ_TYPE::STRING:
       {}
       case OBJ_TYPE::XML: {
-         delete val.string;
+         delete[] val.string;
          break;
       }
       case LINK: {
@@ -3539,7 +3541,7 @@ skiporig:
 //}
 
 bool FFJSON::isType(OBJ_TYPE t) const {
-	return (t == (flags & 0xff));
+	return (t == (uint8_t)(flags & 0x000000ff));
 }
 
 //void FFJSON::setType(uint8_t t) {
