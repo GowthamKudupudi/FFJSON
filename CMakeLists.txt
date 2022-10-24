@@ -15,11 +15,11 @@ message ("BUILD_TARGET: ${BUILD_TARGET}")
 if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../FFJSON")
    if (NOT TARGET logger)
       add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../logger
-         ${CMAKE_CURRENT_SOURCE_DIR}/../logger/${BUILD_TARGET})
+         ${CMAKE_CURRENT_SOURCE_DIR}/../logger/${SRC_RLTV_BLD_DIR})
    endif ()
    if (NOT TARGET ferrybase)
       add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../ferrybase
-         ${CMAKE_CURRENT_SOURCE_DIR}/../ferrybase/${BUILD_TARGET})
+         ${CMAKE_CURRENT_SOURCE_DIR}/../ferrybase/${SRC_RLTV_BLD_DIR})
    endif ()
 endif ()
 if (DEFINED _DEBUG)
