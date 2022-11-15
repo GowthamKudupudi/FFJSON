@@ -2004,11 +2004,11 @@ FFJSON::OBJ_TYPE FFJSON::objectType(string ffjson) {
 	}
 }
 
-FFJSON & FFJSON::operator[](const char* prop) {
+FFJSON& FFJSON::operator [] (const char* prop) {
 	return (*this)[string(prop)];
 }
 
-FFJSON & FFJSON::operator[](const string& prop) {
+FFJSON& FFJSON::operator [] (const string& prop) {
 	if (isType(UNDEFINED)) {
 		setType(OBJECT);
 		FeaturedMember fmMapSequence;
@@ -2831,12 +2831,11 @@ FFJSON::operator bool() {
 	if (isType(LINK)) {
 		fp = this->val.fptr;
 	};
-	if (!isType(BOOL) && !isType(UNDEFINED) && !isType(NUL)) {
+	if (!fp->isType(BOOL) && !fp->isType(UNDEFINED) && !fp->isType(NUL)) {
 		return true;
-	} else if (isType(BOOL)) {
-		return val.boolean;
+	} else if (fp->isType(BOOL)) {
+		return fp->val.boolean;
 	} else {
-
 		return false;
 	}
 }
@@ -2855,7 +2854,7 @@ FFJSON::operator unsigned int() {
 	return (unsigned int) val.number;
 }
 
-FFJSON& FFJSON::operator=(const char* s) {
+FFJSON& FFJSON::operator = (const char* s) {
     if(isQType(UPDATE)){
         FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
         fm.m_pTimeStamp->Update();
