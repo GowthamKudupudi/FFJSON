@@ -180,7 +180,7 @@ void test2() {
 
 void test3() {
    cout << "===================================================" << endl;
-   cout << "               TestFFJSON test 3                   " << endl;
+   cout << "        TestFFJSON test 3 (comparing strings)      " << endl;
    cout << "===================================================" << endl;
    
    FFJSON sample("file://sample.ffjson");
@@ -195,9 +195,11 @@ void test3() {
 
 void test4() {
    cout << "===================================================" << endl;
-   cout << "			TestFFJSON test 4 (testing links)		" << endl;
+   cout << "			TestFFJSON test 4 (testing links)		   " << endl;
    cout << "===================================================" << endl;
-   FFJSON f("file://sample.ffjson");
+   FFJSON f("file://linksSample.ffjson");
+   cout << f << endl;
+   cout << "%TEST_PASSED%" << endl;
 }
 
 void test5() {
@@ -379,14 +381,14 @@ int main (int argc, char** argv) {
    FerryTimeStamp ftsSuiteStart;
    FerryTimeStamp ftsSuiteEnd;
    ftsSuiteStart.Update();
-   
+/*   
    std::cout << "%TEST_STARTED% test1 (TestFFJSON)" << std::endl;
    ftsStart.Update();
    test1();
    ftsEnd.Update();
    ftsDiff = ftsEnd-ftsStart;
    std::cout << "%TEST_FINISHED% time=" << ftsDiff << " test1 (TestFFJSON)" << std::endl;
-/*   
+
    std::cout << "%TEST_STARTED% test2 (TestFFJSON)\n" << std::endl;
    ftsStart.Update();
    test2();
@@ -400,14 +402,14 @@ int main (int argc, char** argv) {
    ftsEnd.Update();
    ftsDiff = ftsEnd-ftsStart;
    std::cout << "%TEST_FINISHED% time=" << ftsDiff << " test3 " << std::endl;
-   
+*/
    std::cout << "%TEST_STARTED% test4 (TestFFJSON)\n" << std::endl;
    ftsStart.Update();
    test4();
    ftsEnd.Update();
    ftsDiff = ftsEnd-ftsStart;
    std::cout << "%TEST_FINISHED% time=" << ftsDiff << " test4 " << std::endl;
-   
+/*
    std::cout << "%TEST_STARTED% test5 (TestFFJSON)\n" << std::endl;
    ftsStart.Update();
    test5();

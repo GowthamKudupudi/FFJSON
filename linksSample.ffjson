@@ -1,0 +1,4 @@
+{
+   obj1: "obj1",
+   linkObj1: obj1
+}

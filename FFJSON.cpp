@@ -2948,182 +2948,107 @@ FFJSON& FFJSON::operator = (const char* s) {
     return *this;
 }
 
-FFJSON & FFJSON::operator=(const string& s) {
+FFJSON & FFJSON::operator = (const string& s) {
 	operator=(s.c_str());
-	/*freeObj();
-	int i = 0;
-	int j = s.length();
-	if (s[0] == '<') {
-		i++;
-		int xmlNail = i;
-		string xmlTag;
-		int length = -1;
-		bool tagset = false;
-		while (s[i] != '>' && i < j) {
-			if (s[i] == ' ') {
-				tagset = true;
-				if (s[i + 1] == 'l' &&
-						s[i + 2] == 'e' &&
-						s[i + 3] == 'n' &&
-						s[i + 4] == 'g' &&
-						s[i + 5] == 't' &&
-						s[i + 6] == 'h') {
-					i += 7;
-					while (s[i] != '=' && i < j) {
-						i++;
-					}
-					i++;
-					while (s[i] != '"' && i < j) {
-						i++;
-					}
-					i++;
-					string lengthstr;
-					while (s[i] != '"' && i < j) {
-						lengthstr += s[i];
-						i++;
-					}
-					length = stoi(lengthstr);
-				}
-			} else if (!tagset) {
-				xmlTag += s[i];
-			}
-			i++;
-		}
-		setType(XML);
-		i++;
-		xmlNail = i;
-		if (length>-1 && length < (j - i)) {
-			i += length;
-		}
-		while (i < j) {
-			if (s[i] == '<' &&
-					s[i + 1] == '/') {
-				if (xmlTag.compare(s.substr(i + 2, xmlTag.length()))
-						== 0 && s[i + 2 + xmlTag.length()] == '>') {
-					size = i - xmlNail;
-					val.string = new char[size + 1];
-					memcpy(val.string, s.c_str() + xmlNail,
-							size);
-					val.string[size] = '\0';
-					i += 3 + xmlTag.length();
-					break;
-				}
-			}
-			i++;
-		}
-	} else {
-		setType(STRING);
-		size = s.length();
-		val.string = new char[size + 1];
-		int iLastNewLnIndex = 0;
-		FeaturedMember fmWidth;
-		fmWidth.width = 0;
-		int i = 0;
-		for (i = 0; i < size; i++) {
-			if (s[i] == '\n') {
-				if (i - iLastNewLnIndex > fmWidth.width)
-					fmWidth.width = i - iLastNewLnIndex;
-				iLastNewLnIndex = i;
-			}
-			val.string[i] = s[i];
-		}
-		if (i - iLastNewLnIndex >= fmWidth.width) {
-			fmWidth.width = i - iLastNewLnIndex;
-			setEFlag(LONG_LAST_LN);
-		} else if (i - iLastNewLnIndex == fmWidth.width - 1) {
-			setEFlag(ONE_SHORT_LAST_LN);
-		}
-		insertFeaturedMember(fmWidth, FM_WIDTH);
-		val.string[size] = '\0';
-	}*/
-    return *this;
+   return *this;
 }
 
-FFJSON & FFJSON::operator=(const int& i) {
-    if(isQType(UPDATE)){
-        FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
-        fm.m_pTimeStamp->Update();
-    }
+FFJSON & FFJSON::operator = (const int& i) {
+   if(isQType(UPDATE)){
+      FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
+      fm.m_pTimeStamp->Update();
+   }
 	freeObj(true);
 	setType(NUMBER);
 	val.number = i;
-    return *this;
+   return *this;
 }
 
-FFJSON & FFJSON::operator=(const FFJSON& f) {
-    if(isQType(UPDATE)){
-        FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
-        fm.m_pTimeStamp->Update();
-    }
+FFJSON & FFJSON::operator = (const FFJSON& f) {
+   if(isQType(UPDATE)){
+      FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
+      fm.m_pTimeStamp->Update();
+   }
 	freeObj(true);
 	copy(f, COPY_ALL);
-    return *this;
+   return *this;
 }
 
-FFJSON & FFJSON::operator=(FFJSON* f) {
-    if(isQType(UPDATE)){
-        FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
-        fm.m_pTimeStamp->Update();
-    }
+FFJSON & FFJSON::operator = (FFJSON* f) {
+   if(isQType(UPDATE)){
+      FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
+      fm.m_pTimeStamp->Update();
+   }
 	freeObj(true);
 	setType(LINK);
 	val.fptr = f;
-    return *this;
+   return *this;
 }
 
-FFJSON & FFJSON::operator=(const double& d) {
-    if(isQType(UPDATE)){
-        FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
-        fm.m_pTimeStamp->Update();
-    }
+FFJSON & FFJSON::operator = (const double& d) {
+   if(isQType(UPDATE)){
+      FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
+      fm.m_pTimeStamp->Update();
+   }
 	freeObj(true);
 	setType(NUMBER);
 	val.number = d;
-    return *this;
+   return *this;
 }
 
-FFJSON & FFJSON::operator=(const float& f) {
-    if(isQType(UPDATE)){
-        FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
-        fm.m_pTimeStamp->Update();
-    }
+FFJSON & FFJSON::operator = (const float& f) {
+   if(isQType(UPDATE)){
+      FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
+      fm.m_pTimeStamp->Update();
+   }
 	freeObj(true);
 	setType(NUMBER);
 	val.number = f;
-    return *this;
+   return *this;
 }
 
-FFJSON & FFJSON::operator=(const long& l) {
-    if(isQType(UPDATE)){
-        FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
-        fm.m_pTimeStamp->Update();
-    }
+FFJSON & FFJSON::operator = (const long& l) {
+   if(isQType(UPDATE)){
+      FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
+      fm.m_pTimeStamp->Update();
+   }
 	freeObj(true);
 	setType(NUMBER);
 	val.number = l;
-    return *this;
+   return *this;
 }
 
-FFJSON & FFJSON::operator=(const short& s) {
-    if(isQType(UPDATE)){
-        FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
-        fm.m_pTimeStamp->Update();
-    }
+FFJSON & FFJSON::operator = (const short& s) {
+   if(isQType(UPDATE)){
+      FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
+      fm.m_pTimeStamp->Update();
+   }
 	freeObj(true);
 	setType(NUMBER);
 	val.number = s;
-    return *this;
+   return *this;
 }
 
-FFJSON & FFJSON::operator=(const unsigned int& i) {
-    if(isQType(UPDATE)){
-        FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
-        fm.m_pTimeStamp->Update();
-    }
+FFJSON & FFJSON::operator = (const unsigned int& i) {
+   if(isQType(UPDATE)){
+      FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
+      fm.m_pTimeStamp->Update();
+   }
 	freeObj(true);
 	setType(NUMBER);
 	val.number = i;
-    return *this;
+   return *this;
+}
+
+FFJSON & FFJSON::operator = (const bool& b) {
+   if(isQType(UPDATE)){
+      FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
+      fm.m_pTimeStamp->Update();
+   }
+	freeObj(true);
+	setType(BOOL);
+	val.boolean = b;
+   return *this;
 }
 
 void FFJSON::trim() {
@@ -3912,7 +3837,7 @@ void FFJSON::Iterator::init(const FFJSON& orig, bool end) {
 	}
 }
 
-FFJSON::Iterator& FFJSON::Iterator::operator=(const Iterator & i) {
+FFJSON::Iterator& FFJSON::Iterator::operator = (const Iterator & i) {
 	copy(i);
   return *this;
 }

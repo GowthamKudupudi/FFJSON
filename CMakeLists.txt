@@ -1,7 +1,7 @@
 # list does not recognize sub-command FILTER for version 3.5
 cmake_minimum_required (VERSION 3.6)
-include(GNUInstallDirs)
-project (FFJSON)
+project (FFJSON CXX C)
+include (GNUInstallDirs)
 message ("Generating build procedure for ${PROJECT_NAME} ...")
 
 message ("Extropolating build type ...")
@@ -29,6 +29,17 @@ set (VERSION_MAJOR 1)
 set (VERSION_MINOR 0)
 set (Umbrella "ferryfair")
 
+# configure a header file to pass some of the CMake settings
+# to the source code
+configure_file (
+   "${PROJECT_SOURCE_DIR}/config.h.in"
+   "${PROJECT_BINARY_DIR}/config.h"
+)
+configure_file(
+   "${PROJECT_SOURCE_DIR}/pkgconfig.pc.in"
+   "${PROJECT_BINARY_DIR}/pkgconfig.pc"
+)
+
 # macOS specific code
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
    set(macOS ON)
@@ -51,28 +62,23 @@ else(NOT LINKAGE)
    string(TOUPPER "${LINKAGE}" LINKAGE)
 endif()
 
-# configure a header file to pass some of the CMake settings
-# to the source code
-configure_file (
-   "${PROJECT_SOURCE_DIR}/config.h.in"
-   "${PROJECT_BINARY_DIR}/config.h"
-)
-configure_file(
-   "${PROJECT_SOURCE_DIR}/pkgconfig.pc.in"
-   "${PROJECT_BINARY_DIR}/pkgconfig.pc"
-)
-
-set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0")
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 set (CMAKE_CXX_STANDARD 17)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
-set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fPIC")
-
+set (GCC_COVERAGE_LINK_FLAGS "-fPIC")
 if (NOT macOS)
-   set (CMAKE_EXE_LINKER_FLAGS 
-      "${CMAKE_EXE_LINKER_FLAGS} -Wl,-unresolved-symbols=ignore-in-shared-libs"
+   set (GCC_COVERAGE_LINK_FLAGS 
+      "${GCC_COVERAGE_LINK_FLAGS} -Wl,-unresolved-symbols=ignore-in-shared-libs"
    )
 endif ()
+if (DEFINED _DEBUG)
+   set (GCC_COVERAGE_COMPILE_FLAGS "${GCC_COVERAGE_COMPILE_FLAGS} -g")
+   set (GCC_COVERAGE_LINK_FLAGS "${GCC_COVERAGE_LINK_FLAGS} -g")
+endif ()
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS}")
+set (
+   CMAKE_EXE_LINKER_FLAGS
+   "${CMAKE_EXE_LINKER_FLAGS} ${GCC_COVERAGE_LINK_FLAGS}"
+)
 
 file(GLOB HEADERS [a-zA-Z0-9_]*.h)
 file(GLOB SOURCES [a-zA-Z0-9_]*.cpp)
@@ -136,6 +142,7 @@ if (BUILD_TESTING)
    add_executable(TestFFJSON
       tests/TestFFJSON.cpp
       sample.ffjson
+      linksSample.ffjson
       MultiLevelInheritance.ffjson
       MultiLineArray.ffjson
       ExtensionTest.ffjson
@@ -150,6 +157,10 @@ if (BUILD_TESTING)
    add_custom_command(TARGET TestFFJSON PRE_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy
       ${CMAKE_SOURCE_DIR}/sample.ffjson $<TARGET_FILE_DIR:TestFFJSON>
+   )
+   add_custom_command(TARGET TestFFJSON PRE_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy
+      ${CMAKE_SOURCE_DIR}/linksSample.ffjson $<TARGET_FILE_DIR:TestFFJSON>
    )
    message("INSTALL_INTERFACE:include/${Umbrella}:"
       $<INSTALL_INTERFACE:include/${Umbrella}>

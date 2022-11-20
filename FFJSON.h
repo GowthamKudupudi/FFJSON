@@ -550,6 +550,7 @@ public:
    FFJSON& operator = (const float& f);
    FFJSON& operator = (const short& s);
    FFJSON& operator = (const long& l);
+   FFJSON& operator = (const bool& b);
    FFJSON& operator = (const FFJSON& f);
    FFJSON& operator = (FFJSON* f);
    
