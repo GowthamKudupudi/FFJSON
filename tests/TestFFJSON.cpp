@@ -198,7 +198,7 @@ void test4() {
    cout << "			TestFFJSON test 4 (testing links)		   " << endl;
    cout << "===================================================" << endl;
    FFJSON f("file://linksSample.ffjson");
-   cout << f << endl;
+   cout << (const char*)f["obj1"]["127.0.0.2"]["rootdir"] << endl;
    cout << "%TEST_PASSED%" << endl;
 }
 

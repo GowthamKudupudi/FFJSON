@@ -1,4 +1,6 @@
 {
-   obj1: "obj1",
-   linkObj1: obj1
+obj1: {
+   "underconstruction": {"rootdir":"rd_string"},
+   "127.0.0.2": underconstruction
+}
 }

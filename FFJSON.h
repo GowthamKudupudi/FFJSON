@@ -583,6 +583,7 @@ private:
    static void strObjMapInit ();
    static bool inline isWhiteSpace (char c);
    static bool inline isTerminatingChar (char c);
+   static bool inline isInitializingChar (char c);
    static std::map<FFJSON*, set<FFJSONIterator> > sm_mUpdateObjs;
    FFJSON* returnNameIfDeclared (vector<string>& prop, FFJSONPObj* fpo) const;
    FFJSON* markTheNameIfExtended (FFJSONPrettyPrintPObj* fpo);
@@ -594,8 +595,7 @@ private:
    string ConstructMultiLineStringArray (
       vector<FFJSON*>& vpfMulLnStrs,
       int indent, vector<int>& vClWidths) const;
-      LinkNRef GetLinkString(FFJSONPObj* pObj
-   );
+   LinkNRef GetLinkString(FFJSONPObj* pObj);
 };
 
 ostream& operator << (ostream& out, const FFJSON& f);
