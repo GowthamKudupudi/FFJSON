@@ -350,16 +350,21 @@ void test12() {
    }
 }
 
-void test13() {
+void test13 () {
    cout << "===================================================" << endl;
-   cout << "                       save file					" << endl;
+   cout << "                       save file					      " << endl;
    cout << "===================================================" << endl;
-   FFJSON& f=*new FFJSON("file://savedfile.ffjson");
+   FFJSON f("file:///home/Necktwi/workspace/FFJSON/saveFileSample.ffjson");
    f["test"]="OK";
-   f.Save();
-   FFJSON ff("file://savedfile.ffjson");
+      //f["obj4"]["nestedFile"]["test"]="OK";
+   cout << f << endl;
+   FFJSON pvh; pvh = &f["vh"]["obj6"];
+   pvh["users"]["test"]="OK";
+   pvh["rbs"]["test"]="OK";
+   cout << f << endl;
+   f.save();
+   FFJSON ff("file:///home/Necktwi/workspace/FFJSON/saveFileSample.ffjson");
    cout << ff << endl;
-   //cout << getStdoutFromCommand("date") << endl;
 }
 
 //void test1() {
@@ -402,14 +407,14 @@ int main (int argc, char** argv) {
    ftsEnd.Update();
    ftsDiff = ftsEnd-ftsStart;
    std::cout << "%TEST_FINISHED% time=" << ftsDiff << " test3 " << std::endl;
-*/
+
    std::cout << "%TEST_STARTED% test4 (TestFFJSON)\n" << std::endl;
    ftsStart.Update();
    test4();
    ftsEnd.Update();
    ftsDiff = ftsEnd-ftsStart;
    std::cout << "%TEST_FINISHED% time=" << ftsDiff << " test4 " << std::endl;
-/*
+
    std::cout << "%TEST_STARTED% test5 (TestFFJSON)\n" << std::endl;
    ftsStart.Update();
    test5();
@@ -430,7 +435,6 @@ int main (int argc, char** argv) {
    ftsEnd.Update();
    ftsDiff = ftsEnd-ftsStart;
    std::cout << "%TEST_FINISHED% time=" << ftsDiff << " test7 " << std::endl;
-   
    
    std::cout << "%TEST_STARTED% test8 (TestFFJSON)\n" << std::endl;
    ftsStart.Update();
@@ -466,14 +470,14 @@ int main (int argc, char** argv) {
    ftsEnd.Update();
    ftsDiff = ftsEnd - ftsStart;
    std::cout << "%TEST_FINISHED% time=" << ftsDiff << " test12 " << std::endl;
-   
+*/   
    std::cout << "%TEST_STARTED% test13\n" << std::endl;
    ftsStart.Update();
    test13();
    ftsEnd.Update();
    ftsDiff = ftsEnd - ftsStart;
    std::cout << "%TEST_FINISHED% time=" << ftsDiff << " test13 " << std::endl;
-*/  
+  
    ftsSuiteEnd.Update();
    ftsDiff = ftsSuiteEnd-ftsSuiteStart;
    std::cout << "%SUITE_FINISHED% time=" << ftsDiff << std::endl;

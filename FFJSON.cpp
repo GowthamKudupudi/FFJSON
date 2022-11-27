@@ -445,9 +445,6 @@ void FFJSON::init (
    }
    int i = (ci == NULL) ? 0 : *ci;
 	int j = ffjson.length();
-	flags = 0;
-	size = 0;
-	m_uFM.link = NULL;
 	FeaturedMember fmMulLnBuf;
 	fmMulLnBuf.m_psMultiLnBuffer = NULL;
    FFJSONPObj ffpo;
@@ -550,7 +547,7 @@ void FFJSON::init (
 						obj = nullptr;
                   val.array->pop_back();
                } else if ((obj->isType(NUL) || obj->isType(UNDEFINED)) &&
-                          obj->isQType(NONE)) {
+                          obj->isQType(NONE) && !obj->isEFlagSet(FILE)) {
                   delete obj;
                   obj = nullptr;
                   val.array->pop_back();
@@ -939,7 +936,10 @@ void FFJSON::init (
 								} else {
 									init(ffjsonStr);
 								}
-							}
+							} else {
+                        ffl_warn(FFJ_MAIN, "Couldn't open %s", path.c_str());
+                        ifs.close();
+                     }
 						}
 					} else {
 						while (i < j&&!isTerminatingChar(ffjson[i])) {
@@ -2164,7 +2164,7 @@ FFJSON& FFJSON::operator [] (const int index) {
  * @param encode_to_base64 if true then the binary data is base64 encoded
  * @return json string of this FFJSON object
  */
-string FFJSON::stringify(bool json, bool bGetQueryStr,
+string FFJSON::stringify (bool json, bool bGetQueryStr,
 		FFJSONPrettyPrintPObj * pObj) const {
 	string ffs;
 	if (bGetQueryStr) {
@@ -2386,11 +2386,15 @@ string FFJSON::stringify(bool json, bool bGetQueryStr,
 	return ffs;
 }
 
-string FFJSON::prettyString(
+string FFJSON::prettyString (
    bool json, bool printComments, unsigned int indent,
-   FFJSONPrettyPrintPObj * pObj
+   FFJSONPrettyPrintPObj * pObj, bool printFilePath
 ) const {
 	string ps;
+   if(isEFlagSet(FILE) && pObj && printFilePath){
+      const char* filename = getFeaturedMember(FM_FILE).m_sFileName;
+      return string("file://")+filename;
+   }
 	switch (getType()) {
 		case OBJ_TYPE::STRING:
 		{
@@ -2534,8 +2538,9 @@ string FFJSON::prettyString(
 							//memKeyFFPairMap[name] = &ms;
 							ms += name + ": ";
 							lfpo.name = &name;
-							ms += ci->second->prettyString(json, printComments,
-									indent + 1, &lfpo);
+							ms += ci->second->prettyString(
+                        json, printComments,indent + 1, &lfpo,
+                        printFilePath);
 							ms += ",\n";
 						}
 					}
@@ -2547,8 +2552,9 @@ string FFJSON::prettyString(
 					lfpo.name = &i->first;
 					if (json)ms += "\"";
 					ms += ": ";
-					ms.append(i->second->prettyString(json, printComments, indent +
-							1, &lfpo));
+					ms.append(i->second->prettyString(
+                            json, printComments, indent +1,
+                            &lfpo, printFilePath));
 				} else if (t == NUL) {
 					ms.append(indent + 1, '\t');
 					if (json)ms.append("\"");
@@ -2740,8 +2746,8 @@ string FFJSON::prettyString(
 							isEFlagSet(EXT_VIA_PARENT))) {
 
 					}
-					sMem = objarr[i]->prettyString(json, printComments, indent + 1,
-							&lfpo);
+					sMem = objarr[i]->prettyString(
+                  json, printComments, indent + 1,&lfpo,printFilePath);
 					ps.append(sMem);
 				} else if (t == NUL) {
 					ps.append(indent + 1, '\t');
@@ -2803,8 +2809,9 @@ string FFJSON::prettyString(
 			if (returnNameIfDeclared(*vtProp, pObj) != NULL) {
 				return implode(".", *vtProp);
 			} else {
-				return val.fptr->prettyString(json, printComments, indent + 1,
-						pObj);
+				return val.fptr->prettyString(
+               json, printComments, indent + 1,
+               pObj, printFilePath);
 			}
 			break;
 		}
@@ -3024,12 +3031,12 @@ FFJSON& FFJSON::operator = (const char* s) {
     return *this;
 }
 
-FFJSON & FFJSON::operator = (const string& s) {
+FFJSON& FFJSON::operator = (const string& s) {
 	operator=(s.c_str());
    return *this;
 }
 
-FFJSON & FFJSON::operator = (const int& i) {
+FFJSON& FFJSON::operator = (const int& i) {
    if(isQType(UPDATE)){
       FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
       fm.m_pTimeStamp->Update();
@@ -3040,7 +3047,7 @@ FFJSON & FFJSON::operator = (const int& i) {
    return *this;
 }
 
-FFJSON & FFJSON::operator = (const FFJSON& f) {
+FFJSON& FFJSON::operator = (const FFJSON& f) {
    if(isQType(UPDATE)){
       FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
       fm.m_pTimeStamp->Update();
@@ -3050,7 +3057,9 @@ FFJSON & FFJSON::operator = (const FFJSON& f) {
    return *this;
 }
 
-FFJSON & FFJSON::operator = (FFJSON* f) {
+// need to implement, segfaults during stringify but
+// can be used to hold pointers
+FFJSON& FFJSON::operator = (FFJSON* f) {
    if(isQType(UPDATE)){
       FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
       fm.m_pTimeStamp->Update();
@@ -3061,7 +3070,23 @@ FFJSON & FFJSON::operator = (FFJSON* f) {
    return *this;
 }
 
-FFJSON & FFJSON::operator = (const double& d) {
+FFJSON& FFJSON::addLink (FFJSON* obj, string label) {
+   vector<string>* prop = new vector<string>();
+   explode(".", label, *prop);
+   if (obj) {
+      freeObj(true);
+      setType(LINK);
+      val.fptr = obj;
+      FeaturedMember cFM;
+      cFM.link = prop;
+      insertFeaturedMember(cFM, FM_LINK);
+   } else {
+      delete prop;
+   }
+   return *this;
+}
+
+FFJSON& FFJSON::operator = (const double& d) {
    if(isQType(UPDATE)){
       FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
       fm.m_pTimeStamp->Update();
@@ -3072,7 +3097,7 @@ FFJSON & FFJSON::operator = (const double& d) {
    return *this;
 }
 
-FFJSON & FFJSON::operator = (const float& f) {
+FFJSON& FFJSON::operator = (const float& f) {
    if(isQType(UPDATE)){
       FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
       fm.m_pTimeStamp->Update();
@@ -3083,7 +3108,7 @@ FFJSON & FFJSON::operator = (const float& f) {
    return *this;
 }
 
-FFJSON & FFJSON::operator = (const long& l) {
+FFJSON& FFJSON::operator = (const long& l) {
    if(isQType(UPDATE)){
       FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
       fm.m_pTimeStamp->Update();
@@ -3094,7 +3119,7 @@ FFJSON & FFJSON::operator = (const long& l) {
    return *this;
 }
 
-FFJSON & FFJSON::operator = (const short& s) {
+FFJSON& FFJSON::operator = (const short& s) {
    if(isQType(UPDATE)){
       FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
       fm.m_pTimeStamp->Update();
@@ -3105,7 +3130,7 @@ FFJSON & FFJSON::operator = (const short& s) {
    return *this;
 }
 
-FFJSON & FFJSON::operator = (const unsigned int& i) {
+FFJSON& FFJSON::operator = (const unsigned int& i) {
    if(isQType(UPDATE)){
       FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
       fm.m_pTimeStamp->Update();
@@ -3116,7 +3141,7 @@ FFJSON & FFJSON::operator = (const unsigned int& i) {
    return *this;
 }
 
-FFJSON & FFJSON::operator = (const bool& b) {
+FFJSON& FFJSON::operator = (const bool& b) {
    if(isQType(UPDATE)){
       FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
       fm.m_pTimeStamp->Update();
@@ -4068,15 +4093,15 @@ FFJSON::Iterator FFJSON::find(string key) {
    return Iterator();
 }
 
-FFJSON::FFJSONPrettyPrintPObj::FFJSONPrettyPrintPObj(
+FFJSON::FFJSONPrettyPrintPObj::FFJSONPrettyPrintPObj (
 		map<const string*, const string*>* m_mpDeps,
 		list<string>* m_lsFFPairLst,
 		map<string*, const string*>* m_mpMemKeyFFPairMap,
-		map<const string*, list<string>::iterator>* pKeyPrettyStringItMap) :
-m_mpDeps(m_mpDeps), m_lsFFPairLst(m_lsFFPairLst),
-m_mpMemKeyFFPairMap(m_mpMemKeyFFPairMap), m_pKeyPrettyStringItMap
-(pKeyPrettyStringItMap) {
-};
+		map<const string*, list<string>::iterator>* pKeyPrettyStringItMap
+) : m_mpDeps(m_mpDeps), m_lsFFPairLst(m_lsFFPairLst),
+    m_mpMemKeyFFPairMap(m_mpMemKeyFFPairMap),
+    m_pKeyPrettyStringItMap(pKeyPrettyStringItMap)
+{};
 
 void FFJSON::headTheHeader(FFJSONPrettyPrintPObj & lfpo) {
 	list<string>::iterator itFFPL = lfpo.m_lsFFPairLst->begin();
@@ -4198,17 +4223,26 @@ FFJSON::LinkNRef FFJSON::GetLinkString(FFJSONPObj* pObj) {
 	return lnr;
 }
 
-int FFJSON::Save(){
-    if(isEFlagSet(FILE)){
-        const char* fn=getFeaturedMember(FM_FILE).m_sFileName;
-        ofstream ofs(fn, ios::out|ios::trunc);
-        if(ofs.is_open()){
-            string sOut = prettyString();
-            ofs << sOut;
-            ofs.close();
-            return sOut.length();
-        }
-        return -2;
-    }
-    return -1;
+int FFJSON::save(){
+   if(isType(OBJECT)||isType(ARRAY)){
+      Iterator it = this->begin();
+      while(it!=this->end()){
+         it->save();
+         it++;
+      }
+   }
+   if(isEFlagSet(FILE)){
+      const char* fn=getFeaturedMember(FM_FILE).m_sFileName;
+      ofstream ofs(fn, ios::out|ios::trunc);
+      if(ofs.is_open()){
+         string sOut = prettyString(false, true, 0, NULL, true);
+         ofs << sOut;
+         ofs.close();
+         return sOut.length();
+      } else {
+         ffl_warn(FFJ_MAIN, "couldn't create %s", fn);
+      }
+      return -2;
+   }
+   return -1;
 }

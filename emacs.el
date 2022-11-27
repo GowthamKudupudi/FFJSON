@@ -12,8 +12,8 @@
 (make-directory cmake-ide-build-dir t)
 (setq cmake-ide-cmake-args
       (list "-D_DEBUG=1 -DCMAKE_BUILD_TYPE=Debug"
-	           "-DCMAKE_EXPORT_COMPILE_COMMANDS=1"
-              "-DBUILD_TESTING=1"))
+	         "-DCMAKE_EXPORT_COMPILE_COMMANDS=1"
+            "-DBUILD_TESTING=1"))
 (defvar MakeThreadCount 1)
 (defvar DebugTarget "TestFFJSON")
 (defvar TargetArguments "-s normal")

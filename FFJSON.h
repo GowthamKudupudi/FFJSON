@@ -24,8 +24,8 @@
 
 using namespace std;
 
-enum FFJ_LOG {
-   FFJ_MAIN
+enum _ffj_log_level {
+   FFJ_MAIN = 1 << 0
 };
 
 class DLLExport FFJSON {
@@ -483,7 +483,8 @@ public:
     */
    string prettyString (
       bool json = false, bool printComments = false,
-      unsigned int indent = 0, FFJSONPrettyPrintPObj* pObj = NULL
+      unsigned int indent = 0, FFJSONPrettyPrintPObj* pObj = NULL,
+      bool printFilePath = false
    ) const;
    /**
     * Generates a query string which can be used to query a FFJSON tree. Query
@@ -515,12 +516,13 @@ public:
    void erase (string name);
    void erase (int index);
    void erase (FFJSON* value);
-   int Save ();
+   int save ();
    Iterator begin ();
    Iterator end();
    Iterator find(string key);
    void headTheHeader(FFJSONPrettyPrintPObj& lfpo);
    void SelfTest();
+   FFJSON& addLink (FFJSON* obj, string label);
    
    FFJSON& operator [] (const char* prop);
    FFJSON& operator [] (const string& prop);
@@ -536,7 +538,6 @@ public:
    FFJSON& operator = (T const& t) {
       freeObj ();
       ffl_debug (FFJ_MAIN, "size:%d", sizeof(T));
-      cout << sizeof (T) << endl;
       size = sizeof (T);
       val .vptr = (uint8_t*) new T (t);
       setType (BINARY);
@@ -573,7 +574,7 @@ public:
    operator unsigned int ();
       
 private:
-   uint32_t       flags;
+   uint32_t       flags = 0;
    FeaturedMember m_uFM;
    void copy (
       const FFJSON& orig, COPY_FLAGS cf = COPY_NONE,

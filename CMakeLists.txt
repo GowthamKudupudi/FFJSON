@@ -143,6 +143,7 @@ if (BUILD_TESTING)
       tests/TestFFJSON.cpp
       sample.ffjson
       linksSample.ffjson
+      saveFileSample.ffjson
       MultiLevelInheritance.ffjson
       MultiLineArray.ffjson
       ExtensionTest.ffjson
@@ -156,11 +157,15 @@ if (BUILD_TESTING)
    )
    add_custom_command(TARGET TestFFJSON PRE_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy
-      ${CMAKE_SOURCE_DIR}/sample.ffjson $<TARGET_FILE_DIR:TestFFJSON>
+      ${CMAKE_CURRENT_SOURCE_DIR}/sample.ffjson $<TARGET_FILE_DIR:TestFFJSON>
    )
    add_custom_command(TARGET TestFFJSON PRE_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy
-      ${CMAKE_SOURCE_DIR}/linksSample.ffjson $<TARGET_FILE_DIR:TestFFJSON>
+      ${CMAKE_CURRENT_SOURCE_DIR}/linksSample.ffjson $<TARGET_FILE_DIR:TestFFJSON>
+   )
+   add_custom_command(TARGET TestFFJSON PRE_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy
+      ${CMAKE_CURRENT_SOURCE_DIR}/saveFileSample.ffjson $<TARGET_FILE_DIR:TestFFJSON>
    )
    message("INSTALL_INTERFACE:include/${Umbrella}:"
       $<INSTALL_INTERFACE:include/${Umbrella}>
