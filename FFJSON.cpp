@@ -2150,7 +2150,9 @@ FFJSON& FFJSON::operator [] (const int index) {
 				return *f;
 			}
 		} else {
-			throw Exception("NULL");
+         string er("NULL; index: ");
+         er+=to_string(index)+", size: "+to_string(size);
+			throw Exception(er);
 		}
 	} else if (isType(LINK)) {
 		return (*val.fptr)[index];
