@@ -36,7 +36,8 @@ void test1() {
    cout << "===================================================" << endl;
    cout << "               TestFFJSON test 1                   " << endl;
    cout << "===================================================" << endl;
-
+   FFJSON f(FFJSON::ARRAY);
+   f[0]=1;
    char cCurrentPath[FILENAME_MAX];
    
    if (!GetCurrentDir(cCurrentPath, sizeof (cCurrentPath))) {
@@ -354,6 +355,8 @@ void test13 () {
    cout << "===================================================" << endl;
    cout << "                       save file					      " << endl;
    cout << "===================================================" << endl;
+   FFJSON fa(FFJSON::ARRAY);
+   fa[0]=1;
    FFJSON f("file:///home/Necktwi/workspace/FFJSON/saveFileSample.ffjson");
    f["test"]="OK";
       //f["obj4"]["nestedFile"]["test"]="OK";

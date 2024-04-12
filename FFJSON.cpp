@@ -47,7 +47,7 @@ const char FFJSON::OBJ_STR[10][15] = {
 map<string, uint8_t> FFJSON::STR_OBJ;
 map<FFJSON*, set<FFJSON::FFJSONIterator> > FFJSON::sm_mUpdateObjs;
 
-FFJSON::FFJSON() {
+FFJSON::FFJSON () {
 	//	type = UNDEFINED;
 	//	qtype = NONE;
 	//	etype = ENONE;
@@ -57,7 +57,7 @@ FFJSON::FFJSON() {
 	val.boolean = false;
 }
 
-FFJSON::FFJSON(OBJ_TYPE t) {
+FFJSON::FFJSON (OBJ_TYPE t) {
 	//s//
 	//	type = UNDEFINED;
 	//	qtype = NONE;
@@ -2132,7 +2132,8 @@ FFJSON& FFJSON::operator [] (const string& prop) {
 }
 
 FFJSON& FFJSON::operator [] (const int index) {
-	if (isType(OBJ_TYPE::ARRAY)) {
+  ssstart:
+   if (isType(OBJ_TYPE::ARRAY)) {
 		if ((*val.array).size() > index) {
 			if ((*val.array)[index] == NULL) {
 				(*val.array)[index] = new FFJSON(UNDEFINED);
@@ -2140,21 +2141,27 @@ FFJSON& FFJSON::operator [] (const int index) {
 				return *((*val.array)[index]->val.fptr);
 			}
 			return *((*val.array)[index]);
-		} else if (index == size) {
-			if ((*this)[size - 1].isType(UNDEFINED)) {
-				return (*this)[size - 1];
-			} else {
-				FFJSON* f = new FFJSON();
-				val.array->push_back(f);
-				size++;
-				return *f;
-			}
 		} else {
-         string er("NULL; index: ");
-         er+=to_string(index)+", size: "+to_string(size);
-			throw Exception(er);
+         FFJSON* f;
+         for (int i=size; i<=index;++i) {
+            f = new FFJSON();
+				val.array->push_back(f);
+				++size;
+         }
+         return *f;
 		}
-	} else if (isType(LINK)) {
+	} else if (isType(UNDEFINED)) {
+      setType(OBJ_TYPE::ARRAY);
+      size = 0;
+      val.array = new vector<FFJSON*>();
+      FFJSON* f;
+      for (int i=size; i<=index;++i) {
+         f = new FFJSON();
+         val.array->push_back(f);
+         ++size;
+      }
+      return *f;
+   } else if (isType(LINK)) {
 		return (*val.fptr)[index];
 	} else {
 		throw Exception("NON ARRAY TYPE");
@@ -3663,16 +3670,16 @@ void FFJSON::clearEFlag(E_FLAGS t) {
 void FFJSON::erase(string name) {
 	FFJSON* fp = this;
 	if (isType(LINK))fp = val.fptr;
-	if (isType(OBJECT)) {
-		FeaturedMember fmMapSequence = getFeaturedMember(FM_MAP_SEQUENCE);
-		map<string, FFJSON*>::iterator it = val.pairs->find(name);
-		if (it == val.pairs->end())return;
+	if (fp->isType(OBJECT)) {
+		FeaturedMember fmMapSequence = fp->getFeaturedMember(FM_MAP_SEQUENCE);
+		map<string, FFJSON*>::iterator it = fp->val.pairs->find(name);
+		if (it == fp->val.pairs->end())return;
 		if (fmMapSequence.m_pvpsMapSequence) {
 			remove(fmMapSequence.m_pvpsMapSequence->begin(),
-					fmMapSequence.m_pvpsMapSequence->end(), it);
+                fmMapSequence.m_pvpsMapSequence->end(), it);
 		}
 		delete it->second;
-		val.pairs->erase(it);
+		fp->val.pairs->erase(it);
 	}
 }
 
