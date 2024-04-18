@@ -338,17 +338,21 @@ void test12() {
    cout << "===================================================" << endl;
    FFJSON f("file://UpdateTest.json");
    int j = 10;
-   while (j) {
+   //while (j) {
       cout << "Creating new answer object: " << endl;
-      FFJSON tf("{}");
+      FFJSON tf("{necktwi:{things:[{name:\"batman\"}]}}");
+      FFJSON tf2("{necktwi:{things:[{name:?}]}}");
       static FerryTimeStamp ft;
       FFJSON* ff = f.answerObject(&tf,NULL,ft);
-      ft.Update();
+      //ft.Update();
       if(!ff)return;
       cout << *ff << endl;
-      f["newState"] = "RECORD";
-      j--;
-   }
+      delete ff;
+      ff = f.answerObject(&tf2,NULL,ft);
+      cout << *ff << endl;
+      //f["newState"] = "RECORD";
+      //j--;
+      //}
 }
 
 void test13 () {
@@ -466,14 +470,15 @@ int main (int argc, char** argv) {
    ftsEnd.Update();
    ftsDiff = ftsEnd-ftsStart;
    std::cout << "%TEST_FINISHED% time=" << ftsDiff << " test11 " << std::endl;
-   
+*/   
    std::cout << "%TEST_STARTED% test12\n" << std::endl;
    ftsStart.Update();
    test12();
    ftsEnd.Update();
    ftsDiff = ftsEnd - ftsStart;
    std::cout << "%TEST_FINISHED% time=" << ftsDiff << " test12 " << std::endl;
-*/   
+
+   /*
    std::cout << "%TEST_STARTED% test13\n" << std::endl;
    ftsStart.Update();
    test13();
@@ -484,6 +489,6 @@ int main (int argc, char** argv) {
    ftsSuiteEnd.Update();
    ftsDiff = ftsSuiteEnd-ftsSuiteStart;
    std::cout << "%SUITE_FINISHED% time=" << ftsDiff << std::endl;
-   
+   */
    return (EXIT_SUCCESS);
 }

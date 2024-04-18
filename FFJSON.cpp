@@ -101,13 +101,14 @@ FFJSON::FFJSON(const string& ffjson, int* ci, int indent,
 	init(ffjson, ci, indent, pObj);
 }
 
-void FFJSON::copy(const FFJSON& orig, COPY_FLAGS cf, FFJSONPObj* pObj) {
-	flags = 0;
-	setType(orig.getType());
-	size = orig.size;
-	setType(orig.getType());
-	m_uFM.link = NULL;
-	val.number = 0;
+void FFJSON::copy (const FFJSON& orig, COPY_FLAGS cf, FFJSONPObj* pObj) {
+   if (!(isType(OBJECT)||isType(ARRAY))){
+      flags = 0;
+      setType(orig.getType());
+      size = orig.size;
+      setType(orig.getType());
+      m_uFM.link = NULL;
+   }
 	switch (getType()) {
 		case NUMBER:
 			val.number = orig.val.number;
@@ -145,12 +146,9 @@ void FFJSON::copy(const FFJSON& orig, COPY_FLAGS cf, FFJSONPObj* pObj) {
 			break;
 		case OBJECT:
 		{
-			FeaturedMember fmMapSequence;
-			fmMapSequence.m_pvpsMapSequence = new vector<map<string, FFJSON*>::
-					iterator>();
-			insertFeaturedMember(fmMapSequence, FM_MAP_SEQUENCE);
+			FeaturedMember fmMapSequence = getFeaturedMember(FM_MAP_SEQUENCE);
 			map<string, FFJSON*>::iterator i;
-			FeaturedMember fmOrigMapSequence = getFeaturedMember(FM_MAP_SEQUENCE);
+			FeaturedMember fmOrigMapSequence = orig.getFeaturedMember(FM_MAP_SEQUENCE);
 			int iMapSeqIndexer = 0;
 			if (fmOrigMapSequence.m_pvpsMapSequence) {
 				if (iMapSeqIndexer < fmOrigMapSequence.m_pvpsMapSequence->size()) {
@@ -161,17 +159,21 @@ void FFJSON::copy(const FFJSON& orig, COPY_FLAGS cf, FFJSONPObj* pObj) {
 			} else {
 				i = orig.val.pairs->begin();
 			}
-			val.pairs = new map<string, FFJSON*>();
 			FFJSONPObj pLObj;
 			pLObj.pObj = pObj;
 			pLObj.value = this;
 			while (i != orig.val.pairs->end()) {
-				FFJSON* fo;
-				if (i->second != NULL) {
-					pLObj.name = &i->first;
-					fo = new FFJSON(*i->second, cf, &pLObj);
-				}
-				if (fo && ((cf == COPY_QUERIES && !fo->isQType(QUERY_TYPE::NONE))
+				FFJSON* fo = NULL;
+            pLObj.name = &i->first;
+            map<string, FFJSON*>::iterator ii = val.pairs->find(i->first);
+            if (ii!=val.pairs->end()){
+               ii->second->copy(*i->second, cf, &pLObj);
+            } else {
+               fo = new FFJSON(*i->second, cf, &pLObj);
+               //pair<map<string, FFJSON*>::iterator, bool> prNew = val.pairs->insert(pair<string, FFJSON*>(i->first, new FFJSON(*i->second, cf, &pLObj)));
+               
+            }
+            if (fo && ((cf == COPY_QUERIES && !fo->isQType(QUERY_TYPE::NONE))
 						|| !fo->isType(UNDEFINED))) {
 					pair < map<string, FFJSON*>::iterator, bool> prNew = val.
 							pairs->insert(pair<string, FFJSON*>(i->first, fo));
@@ -532,7 +534,7 @@ void FFJSON::init (
 				setType(ARRAY);
 				size = 0;
 				val.array = new vector<FFJSON*>();
-				i++;
+				++i;
 				int objNail = i;
 				int nind = getIndent(ffjson.c_str(), &i, indent);
             ffpo.value = this;
@@ -542,10 +544,11 @@ void FFJSON::init (
 					string index = to_string(val.array->size());
 					ffpo.name = &index;
                obj = new FFJSON(ffjson, &i, nind, &ffpo);
-					if (obj->isType(NUL) && ffjson[i] == ']' && size == 0) {
+					if (obj->isType(NUL) && ffjson[i] == ']' && size == 1) {
 						delete obj;
 						obj = nullptr;
                   val.array->pop_back();
+                  --size;
                } else if ((obj->isType(NUL) || obj->isType(UNDEFINED)) &&
                           obj->isQType(NONE) && !obj->isEFlagSet(FILE)) {
                   delete obj;
@@ -2136,7 +2139,7 @@ FFJSON& FFJSON::operator [] (const int index) {
    if (isType(OBJ_TYPE::ARRAY)) {
 		if ((*val.array).size() > index) {
 			if ((*val.array)[index] == NULL) {
-				(*val.array)[index] = new FFJSON(UNDEFINED);
+				(*val.array)[index] = new FFJSON(NUL);
 			} else if ((*val.array)[index]->isType(LINK)) {
 				return *((*val.array)[index]->val.fptr);
 			}
@@ -3061,7 +3064,8 @@ FFJSON& FFJSON::operator = (const FFJSON& f) {
       FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
       fm.m_pTimeStamp->Update();
    }
-	freeObj(true);
+   if (!(isType(OBJECT) && f.isType(OBJECT)))
+      freeObj(true);
 	copy(f, COPY_ALL);
    return *this;
 }
@@ -3350,8 +3354,10 @@ string FFJSON::queryString() {
 	}
 }
 
-FFJSON * FFJSON::answerObject(FFJSON * queryObject, FFJSONPObj* pObj,
-		FerryTimeStamp lastUpdateTime) {
+FFJSON* FFJSON::answerObject (
+   FFJSON * queryObject, FFJSONPObj* pObj,
+   FerryTimeStamp lastUpdateTime
+) {
 	FFJSON * ao = NULL;
 	FFJSONPObj ffpThisObj;
 	ffpThisObj.value = this;
