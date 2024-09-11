@@ -199,6 +199,15 @@ void test4() {
    cout << "			TestFFJSON test 4 (testing links)		   " << endl;
    cout << "===================================================" << endl;
    FFJSON f("file://linksSample.ffjson");
+   std::map<string,FFJSON*>* emln = f["obj1"].val.pairs;
+   typedef const char* ccp;
+   if (emln->find(string("127.0.0.2"))!=emln->end()) {
+      FFJSON* ffemln = (*emln)["127.0.0.2"];
+      FFJSON::Link* link =
+         ffemln->getFeaturedMember(FFJSON::FM_LINK).link;
+      const char* linkName=(*link)[0].c_str();
+      cout << "127.0.0.2 is link to " << linkName << endl;
+   }
    cout << (const char*)f["obj1"]["127.0.0.2"]["rootdir"] << endl;
    cout << "%TEST_PASSED%" << endl;
 }
@@ -414,14 +423,14 @@ int main (int argc, char** argv) {
    ftsEnd.Update();
    ftsDiff = ftsEnd-ftsStart;
    std::cout << "%TEST_FINISHED% time=" << ftsDiff << " test3 " << std::endl;
-
+*/
    std::cout << "%TEST_STARTED% test4 (TestFFJSON)\n" << std::endl;
    ftsStart.Update();
    test4();
    ftsEnd.Update();
    ftsDiff = ftsEnd-ftsStart;
    std::cout << "%TEST_FINISHED% time=" << ftsDiff << " test4 " << std::endl;
-
+/*
    std::cout << "%TEST_STARTED% test5 (TestFFJSON)\n" << std::endl;
    ftsStart.Update();
    test5();
@@ -470,7 +479,7 @@ int main (int argc, char** argv) {
    ftsEnd.Update();
    ftsDiff = ftsEnd-ftsStart;
    std::cout << "%TEST_FINISHED% time=" << ftsDiff << " test11 " << std::endl;
-*/   
+   
    std::cout << "%TEST_STARTED% test12\n" << std::endl;
    ftsStart.Update();
    test12();
@@ -478,7 +487,6 @@ int main (int argc, char** argv) {
    ftsDiff = ftsEnd - ftsStart;
    std::cout << "%TEST_FINISHED% time=" << ftsDiff << " test12 " << std::endl;
 
-   /*
    std::cout << "%TEST_STARTED% test13\n" << std::endl;
    ftsStart.Update();
    test13();
