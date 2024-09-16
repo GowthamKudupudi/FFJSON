@@ -2790,11 +2790,11 @@ string FFJSON::prettyString (
 				if (++i != objarr.size()) {
 
 				} else {
-					if ((!(isEFlagSet(EXT_VIA_PARENT) && !isEFlagSet(EXTENDED)) ||
-                    isEFlagSet(HAS_CHILDREN))
-               ) {
-						ps.append("\n");
-					}
+					// if ((isEFlagSet(EXT_VIA_PARENT) && !isEFlagSet(EXTENDED)) ||
+               //      isEFlagSet(HAS_CHILDREN)
+               // ) {
+					// 	ps.append("\n");
+					// }
 				}
 			}
 			if (bInCompleteStrs) {
@@ -3672,23 +3672,24 @@ void FFJSON::clearEFlag(E_FLAGS t) {
 	flags &= ~(t);
 }
 
-void FFJSON::erase(string name) {
+void FFJSON::erase (string name) {
 	FFJSON* fp = this;
 	if (isType(LINK))fp = val.fptr;
 	if (fp->isType(OBJECT)) {
-		FeaturedMember fmMapSequence = fp->getFeaturedMember(FM_MAP_SEQUENCE);
+		vector<map<string, FFJSON*>::iterator>* fmMapSequence =
+         fp->getFeaturedMember(FM_MAP_SEQUENCE).m_pvpsMapSequence;
 		map<string, FFJSON*>::iterator it = fp->val.pairs->find(name);
 		if (it == fp->val.pairs->end())return;
-		if (fmMapSequence.m_pvpsMapSequence) {
-			remove(fmMapSequence.m_pvpsMapSequence->begin(),
-                fmMapSequence.m_pvpsMapSequence->end(), it);
+		if (fmMapSequence) {
+         fmMapSequence->erase(
+            std::find(fmMapSequence->begin(),fmMapSequence->end(),it));
 		}
 		delete it->second;
 		fp->val.pairs->erase(it);
 	}
 }
 
-void FFJSON::erase(int index) {
+void FFJSON::erase (int index) {
 	if (isType(ARRAY)) {
 		if (index < size) {
 
@@ -3698,7 +3699,7 @@ void FFJSON::erase(int index) {
 	}
 }
 
-void FFJSON::erase(FFJSON * value) {
+void FFJSON::erase (FFJSON * value) {
 	if (isType(OBJECT)) {
 		map<string, FFJSON*>::iterator i = val.pairs->begin();
 		FeaturedMember fmMapSequence = getFeaturedMember(FM_MAP_SEQUENCE);
@@ -4117,7 +4118,7 @@ FFJSON::FFJSONPrettyPrintPObj::FFJSONPrettyPrintPObj (
     m_pKeyPrettyStringItMap(pKeyPrettyStringItMap)
 {};
 
-void FFJSON::headTheHeader(FFJSONPrettyPrintPObj & lfpo) {
+void FFJSON::headTheHeader (FFJSONPrettyPrintPObj & lfpo) {
 	list<string>::iterator itFFPL = lfpo.m_lsFFPairLst->begin();
 	markTheNameIfExtended(&lfpo);
 	while (itFFPL != lfpo.m_lsFFPairLst->end()) {
@@ -4247,9 +4248,9 @@ int FFJSON::save(){
    }
    if(isEFlagSet(FILE)){
       const char* fn=getFeaturedMember(FM_FILE).m_sFileName;
+      string sOut = prettyString(false, true, 0, NULL, true);
       ofstream ofs(fn, ios::out|ios::trunc);
       if(ofs.is_open()){
-         string sOut = prettyString(false, true, 0, NULL, true);
          ofs << sOut;
          ofs.close();
          return sOut.length();
