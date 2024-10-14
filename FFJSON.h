@@ -484,7 +484,7 @@ public:
    string prettyString (
       bool json = false, bool printComments = false,
       unsigned int indent = 0, FFJSONPrettyPrintPObj* pObj = NULL,
-      bool printFilePath = false
+      bool printFilePath = false, bool save = false
    ) const;
    /**
     * Generates a query string which can be used to query a FFJSON tree. Query
@@ -516,7 +516,7 @@ public:
    void erase (string name);
    void erase (int index);
    void erase (FFJSON* value);
-   int save ();
+   int save () const;
    Iterator begin ();
    Iterator end();
    Iterator find(string key);
