@@ -33,16 +33,18 @@ public:
    
    enum OBJ_TYPE : uint8_t {
       UNDEFINED,
+      BOOL,
+      BINARY,
+      NUMBER,
+      TIME,
       STRING,
       XML,
-      NUMBER,
-      BOOL,
-      OBJECT,
+      SET_TYPE,
+      NEW_SET_MEMBER,
       ARRAY,
-      LINK,
-      BINARY,
+      OBJECT,
       BIG_OBJECT,
-      TIME,
+      LINK,
       NUL
    };
    
@@ -263,7 +265,7 @@ public:
    };
    
    struct FFJSONPObj {
-      const string* name;
+      const string* name = NULL;
       FFJSON* value = NULL;
       FFJSONPObj* pObj = NULL;
       vector<map<string, FFJSON*>::iterator>* m_pvpsMapSequence;
@@ -342,11 +344,16 @@ public:
       FFJSON*  m_pRef = 0;
       string   m_sLink;
    };
-   
+
+   struct FFPtrCmp {
+      bool operator() (const FFJSON* a, const FFJSON* b) const;
+   };
+   typedef set<FFJSON*, FFPtrCmp> ffset;
    union FFValue {
       char*                      string;
       vector<FFJSON*>*           array;
       map<std::string, FFJSON*>* pairs;
+      set<FFJSON*, FFPtrCmp>*    set;
       double                     number;
       bool                       boolean;
       FFJSON*                    fptr;
@@ -522,11 +529,12 @@ public:
    Iterator find(string key);
    void headTheHeader(FFJSONPrettyPrintPObj& lfpo);
    void SelfTest();
-   FFJSON& addLink (FFJSON* obj, string label);
+   FFJSON& addLink (const FFJSON& obj, string label);
    
    FFJSON& operator [] (const char* prop);
    FFJSON& operator [] (const string& prop);
    FFJSON& operator [] (const int index);
+   FFJSON& operator [] (void);
    
    /**
     * returns null FFJSON object if invalid pointer. Deletes the object on
@@ -572,7 +580,7 @@ public:
    operator bool ();
    operator int ();
    operator unsigned int ();
-      
+   
 private:
    uint32_t       flags = 0;
    FeaturedMember m_uFM;
@@ -587,6 +595,7 @@ private:
    static bool inline isInitializingChar (char c);
    static std::map<FFJSON*, set<FFJSONIterator> > sm_mUpdateObjs;
    FFJSON* returnNameIfDeclared (vector<string>& prop, FFJSONPObj* fpo) const;
+   const FFJSON* returnFFIfDeclared (vector<string>& prop) const;
    FFJSON* markTheNameIfExtended (FFJSONPrettyPrintPObj* fpo);
    bool inherit (FFJSON& obj, FFJSONPObj* pFPObj);
    void ReadMultiLinesInContainers (
@@ -600,5 +609,7 @@ private:
 };
 
 ostream& operator << (ostream& out, const FFJSON& f);
+
+bool operator < (const FFJSON& lhs, const FFJSON& rhs);
 
 #endif

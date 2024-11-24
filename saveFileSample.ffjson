@@ -2,7 +2,7 @@
 	vh: {
 		obj5: {
 			users: file:///home/Necktwi/workspace/WWW-development/users.ffjson,
-			rbs: file:///home/Necktwi/workspace/WWW-development/rbs.ffjson
+         things: {}
 		},
 		obj6: obj5
 	},
