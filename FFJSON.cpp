@@ -994,7 +994,7 @@ void FFJSON::init (
                         if (t) {
                            init(ffjsonStr, 0, -1);
                         } else {
-                           init(ffjsonStr);
+                           init(ffjsonStr, NULL, 0, pObj);
                         }
                      } else {
                         ffl_warn(FFJ_MAIN, "Couldn't open %s", path.c_str());
@@ -2755,12 +2755,14 @@ string FFJSON::prettyString (
          lfpo.pObj = pObj;
          lfpo.value = const_cast<FFJSON*> (this);
          ps = "{";
-         for (FFJSON* fp : objset) {
-            ps += fp->prettyString(json, printComments, indent+1, &lfpo,
-                                   printFilePath, save);
-            ps+=',';
+         if(objset.size()) {
+            for (FFJSON* fp : objset) {
+               ps += fp->prettyString(json, printComments, indent+1, &lfpo,
+                                      printFilePath, save);
+               ps+=',';
+            }
+            ps.pop_back();
          }
-         ps.pop_back();
          ps+='}';
          break;
       }
@@ -3865,7 +3867,7 @@ void FFJSON::erase (int index) {
    }
 }
 
-void FFJSON::erase (FFJSON * value) {
+void FFJSON::erase (FFJSON* value) {
    if (isType(OBJECT)) {
       map<string, FFJSON*>::iterator i = val.pairs->begin();
       FeaturedMember fmMapSequence = getFeaturedMember(FM_MAP_SEQUENCE);
@@ -3891,6 +3893,13 @@ void FFJSON::erase (FFJSON * value) {
             break;
          }
          i++;
+      }
+   } else if (isType(SET_TYPE)) {
+      ffset::iterator it = val.set->find(value);
+      if (it!=val.set->end()) {
+         delete *it;
+         val.set->erase(it);
+         --size;
       }
    }
 }
@@ -4307,6 +4316,11 @@ ostream& operator << (ostream& out, const FFJSON & f) {
 bool operator < (const FFJSON& lhs, const FFJSON& rhs) {
    ffl_debug(FFJ_MAIN, "< operator");
    if (!lhs.isType(rhs.getType())) {
+      if (lhs.isType(FFJSON::LINK)) {
+         return lhs.val.fptr < &rhs;
+      } else if (rhs.isType(FFJSON::LINK)) {
+         return rhs.val.fptr < &lhs;
+      }
       return lhs.getType() < rhs.getType();
    } else {
       switch(lhs.getType()) {
