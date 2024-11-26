@@ -16,7 +16,8 @@ I recursively hacked it to extract as many features as I could and I will contin
    "name": "Gowtham",
    "id": 1729,
    "isProgrammer": true,
-   "favLanguages": ["C++", "Javascript"],
+   "favLanguages": {"C++", "Javascript", "lisp"},
+   "langScores":   [9,      9,         , 8] | {favLanguages},
    "address": {
       "town": "KAKINADA",
       "country": "Bhaarath"
@@ -37,6 +38,7 @@ if (obj["isProgrammer"]) {
    # append new element to array
    obj["favLanguages"][obj["favLanguages"].size]="lisp";
    cout << obj["favLanguages"] << endl;
+   cout << "C++ score: " << obj["langScores"]["C++"] << endl;
 }
 ```
 
@@ -45,11 +47,8 @@ if (obj["isProgrammer"]) {
 Gowtham
 1729
 Bhaarath
-[
-   "C++",
-   "javascript",
-   "lisp"
-]
+{"C++", "javascript", "lisp"}
+C++ score: 9
 ```
 
 ## Installation

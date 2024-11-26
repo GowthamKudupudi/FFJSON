@@ -550,6 +550,7 @@ void FFJSON::init (
                      break;
                   case '{':
                      ++curlBegan;
+                     ++i;
                      break;
                   case '}':
                      if (!curlBegan && !squareBegan) {
@@ -562,12 +563,15 @@ void FFJSON::init (
                      } else {
                         --curlBegan;
                      }
+                     ++i;
                      break;
                   case '[':
                      ++squareBegan;
+                     ++i;
                      break;
                   case ']':
                      --squareBegan;
+                     ++i;
                      break;
                   default:
                      ++i;
@@ -2534,8 +2538,11 @@ string FFJSON::prettyString (
    if (isEFlagSet(FILE) && pObj && printFilePath) {
       const char* filename = getFeaturedMember(FM_FILE).m_sFileName;
       if (save)
-         this->save();
+         this->save(json, printComments, 0, pObj, false);
       return string("file://")+filename;
+   }
+   if (!printFilePath && save) {
+      printFilePath = true;
    }
    switch (getType()) {
       case OBJ_TYPE::STRING: {
@@ -4409,10 +4416,14 @@ FFJSON::LinkNRef FFJSON::GetLinkString (FFJSONPObj* pObj) {
    return lnr;
 }
 
-int FFJSON::save () const {
+int FFJSON::save (
+   bool json, bool printComments, unsigned int indent,
+   FFJSONPrettyPrintPObj* pObj, bool printFilePath, bool save
+) const {
+   string sOut = prettyString(json, printComments, 0, pObj,
+                              false, true);
    if (isEFlagSet(FILE)) {
       const char* fn = getFeaturedMember(FM_FILE).m_sFileName;
-      string sOut = prettyString(false, true, 0, NULL, true, true);
       ofstream ofs(fn, ios::out|ios::trunc);
       if(ofs.is_open()){
          ofs << sOut;
