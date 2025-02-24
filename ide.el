@@ -11,8 +11,8 @@
       (setq CMakeProject "FFJSON")
 
       (setq cmake-ide-build-dir
-            (concat (file-name-directory (buffer-file-name))
-                    "build/Linux/x86_64/debug/"))
+            (concat ide-project-dir
+                    "/build/Linux/x86_64/debug/"))
       (setq cmake-ide-build-pool-dir cmake-ide-build-dir)
       (make-directory cmake-ide-build-dir t)
       (setq cmake-ide-cmake-args

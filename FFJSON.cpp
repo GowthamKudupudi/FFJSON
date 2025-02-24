@@ -107,6 +107,14 @@ void FFJSON::copy (const FFJSON& orig, COPY_FLAGS cf, FFJSONPObj* pObj) {
       freeObj();
       flags = 0;
       setType(orig.getType());
+      if (isType(OBJECT)) {
+         FeaturedMember fmMapSequence;
+         fmMapSequence.m_pvpsMapSequence =
+            new vector<map<string,FFJSON*>::iterator>();
+         insertFeaturedMember(fmMapSequence,
+                              FM_MAP_SEQUENCE);
+         val.pairs = new map<string, FFJSON*>();
+      }
       size = orig.size;
    }
    switch (getType()) {
@@ -178,8 +186,7 @@ void FFJSON::copy (const FFJSON& orig, COPY_FLAGS cf, FFJSONPObj* pObj) {
                if (size < MAX_ORDERED_MEMBERS) {
                   fmMapSequence.m_pvpsMapSequence->push_back(prNew.first);
                } else if (fmMapSequence.m_pvpsMapSequence) {
-                  delete fmMapSequence.m_pvpsMapSequence;
-                  fmMapSequence.m_pvpsMapSequence = NULL;
+                  deleteFeaturedMember(FM_MAP_SEQUENCE);
                }
             } else {
                delete fo;
@@ -211,7 +218,7 @@ void FFJSON::copy (const FFJSON& orig, COPY_FLAGS cf, FFJSONPObj* pObj) {
             this->init("[]");
          }
          while (i < orig.val.array->size()) {
-            FFJSON * fo = NULL;
+            FFJSON* fo = NULL;
             string index = to_string(i);
             pLObj.name = &index;
             if ((*orig.val.array)[i] != NULL)
@@ -224,21 +231,25 @@ void FFJSON::copy (const FFJSON& orig, COPY_FLAGS cf, FFJSONPObj* pObj) {
          }
          break;
       }
+      case SET_TYPE: {
+         size=0;
+         val.set = new ffset();
+         for (FFJSON* fp : *orig.val.set) {
+            FFJSON* newcopy = new FFJSON(*fp);
+            if (val.set->insert(newcopy).second)
+               ++size;
+            else
+               delete newcopy;
+         }
+         break;
+      }
       case LINK: {
-         freeObj();
          vector<string>* ln =
             new vector<string>(*orig.getFeaturedMember(FM_LINK).link);
-         val.fptr = returnNameIfDeclared(*ln, pObj);
-         if (val.fptr != NULL) {
-            FeaturedMember fm;
-            fm.link = ln;
-            insertFeaturedMember(fm, FM_LINK);
-         } else {
-            delete ln;
-            setType(NUL);
-            size = 0;
-            val.boolean = false;
-         }
+         FeaturedMember fm;
+         fm.link = ln;
+         insertFeaturedMember(fm, FM_LINK);
+         val.fptr = orig.val.fptr;
          break;
       }
       case TIME:
@@ -433,7 +444,7 @@ void FFJSON::init (
          }
          ++pObj->value->size;
       } else {
-         pObj=pObj->pObj;
+         pObj=pObj->pObj;//it must be link
       }
    }
    int i = (ci == NULL) ? 0 : *ci;
@@ -478,6 +489,7 @@ void FFJSON::init (
                      ffpo.name = &objId;
                      ++i;
                      FFJSON* obj = new FFJSON(ffjson, &i, nind, &ffpo);
+                     // TODO
                      if (size >= MAX_ORDERED_MEMBERS) {
                         delete fmMapSequence.m_pvpsMapSequence;
                         fmMapSequence.m_pvpsMapSequence = NULL;
@@ -525,6 +537,8 @@ void FFJSON::init (
                         val.set = new ffset();
                      }
                      if (isType(OBJ_TYPE::SET_TYPE)) {
+                        string name = to_string(size);
+                        ffpo.name=&name;
                         FFJSON* obj =
                            new FFJSON(ffjson, &objIdNail, nind,
                                       &ffpo);
@@ -536,9 +550,13 @@ void FFJSON::init (
                               delete obj;
                            }
                         } else {
+                           --size;
                            delete obj;
+                           if (!size) {
+                              delete val.set;
+                              goto objtype;
+                           }
                            gotoObjBackyard=true;
-                           goto objtype;
                         }
                      }
                      ++i;
@@ -554,7 +572,7 @@ void FFJSON::init (
                      break;
                   case '}':
                      if (!curlBegan && !squareBegan) {
-                        if (isType(UNDEFINED)) {
+                        if (isType(UNDEFINED)||isType(SET_TYPE)) {
                            gotoObjBackyard = true;
                            goto settype;
                         }
@@ -1638,6 +1656,8 @@ void DeleteChildLinks(vector<FFJSON*>* childLinks) {
 
 void FFJSON::destroyAllFeaturedMembers (bool bExemptQueries) {
    uint32_t iFMCount = flags >> 28;
+   if (!iFMCount)
+      return;
    if (isType(STRING) && isEFlagSet(STRING_INIT)) {
       if (iFMCount == 1) {
          //Deletion of the multilinebuf is responsibility of me
@@ -1790,6 +1810,19 @@ void FFJSON::deleteFeaturedMember(FeaturedMemType fmt) {
       }
       pfmPre = pFMS;
       iFMTraversed++;
+   }
+   if (isType(OBJECT) && fmt==FM_MAP_SEQUENCE) {
+      if (iFMCount == 1) {
+         delete m_uFM.m_pvpsMapSequence;
+         m_uFM.m_pvpsMapSequence=NULL;
+      } else {
+         delete m_uFM.m_pFMH->m_uFM.m_pvpsMapSequence;
+         FeaturedMemHook* pFMHHolder = m_uFM.m_pFMH;
+         m_uFM = m_uFM.m_pFMH->m_pFMH;
+         delete pFMHHolder;
+      }
+      --iFMCount;
+      setFMCount(iFMCount);
    }
    if (this->isEFlagSet(EXT_VIA_PARENT)) {
       if (fmt == FM_TABHEAD) {
@@ -1967,7 +2000,7 @@ const FFJSON* FFJSON::returnFFIfDeclared (vector<string>& prop) const {
    return nullptr;
 }
 
-FFJSON * FFJSON::markTheNameIfExtended(FFJSONPrettyPrintPObj * fpo) {
+FFJSON* FFJSON::markTheNameIfExtended(FFJSONPrettyPrintPObj * fpo) {
    map<string, FFJSON*>::iterator it = val.pairs->begin();
    FFJSONPrettyPrintPObj* oFPO = fpo;
    while (it != val.pairs->end()) {
@@ -2122,6 +2155,9 @@ void FFJSON::freeObj (bool bAssignment) {
       case LINK: {
          break;
       }
+      case DLINK: {
+         break;
+      }
       case BINARY: {
          delete val.vptr;
          break;
@@ -2184,7 +2220,7 @@ FFJSON::OBJ_TYPE FFJSON::objectType (string ffjson) {
 }
 
 FFJSON& FFJSON::operator [] (void) {
-   if (isType(UNDEFINED) ) {
+   if (isType(UNDEFINED)) {
      settype:
       setType(SET_TYPE);
       val.set=new ffset();
@@ -2205,7 +2241,7 @@ FFJSON& FFJSON::operator [] (const char* prop) {
 }
 
 FFJSON& FFJSON::operator [] (const string& prop) {
-   FFJSON* obj = new FFJSON();
+   FFJSON* obj;
    if (isType(UNDEFINED)) {
       setType(OBJECT);
       FeaturedMember fmMapSequence;
@@ -2216,34 +2252,31 @@ FFJSON& FFJSON::operator [] (const string& prop) {
       size = 0;
    }
    if (isType(OBJ_TYPE::OBJECT)) {
-      map<string, FFJSON*>::iterator it = (*val.pairs).find(prop);
-      if (it != (*val.pairs).end()) {
+      ffmap::iterator it = val.pairs->find(prop);
+      if (it != val.pairs->end()) {
          if (it->second != NULL) {
             if (it->second->isType(LINK)) {
-               delete obj;
                return *(it->second->val.fptr);
             }
-            delete obj;
             return *(it->second);
          } else {
-            obj->setType(NUL);
+            obj = new FFJSON();
             return *((*val.pairs)[prop] = obj);
          }
       } else {
          ++size;
+         obj = new FFJSON();
          FeaturedMember fmMapSequence = getFeaturedMember(FM_MAP_SEQUENCE);
-         pair < map<string, FFJSON*>::iterator, bool> prNew = val.
+         pair<ffmap::iterator, bool> prNew = val.
             pairs->insert(pair<string, FFJSON*>(prop, obj));
          if (size < MAX_ORDERED_MEMBERS) {
             fmMapSequence.m_pvpsMapSequence->push_back(prNew.first);
          } else if (fmMapSequence.m_pvpsMapSequence) {
-            delete fmMapSequence.m_pvpsMapSequence;
-            fmMapSequence.m_pvpsMapSequence = NULL;
+            deleteFeaturedMember(FM_MAP_SEQUENCE);
          }
          return *obj;
       }
    } else if (isType(ARRAY)) {
-      delete obj;
       if (isEFlagSet(EXT_VIA_PARENT)) {
          FeaturedMember cFM = getFeaturedMember(FM_TABHEAD);
          return ((*this)[(*cFM.tabHead)[prop]]);
@@ -2251,7 +2284,6 @@ FFJSON& FFJSON::operator [] (const string& prop) {
          return ((*this)[stoi(prop)]);
       }
    } else if (isType(LINK)) {
-      delete obj;
       return (*val.fptr)[prop];
    }
    return *obj;
@@ -2300,7 +2332,7 @@ FFJSON& FFJSON::operator [] (const int index) {
  * @return json string of this FFJSON object
  */
 string FFJSON::stringify (bool json, bool bGetQueryStr,
-                          FFJSONPrettyPrintPObj * pObj) const {
+                          FFJSONPrettyPrintPObj * pObj, uint lnLvl) const {
    string ffs;
    if (bGetQueryStr) {
       if (isQType(QUERY)) {
@@ -2314,8 +2346,7 @@ string FFJSON::stringify (bool json, bool bGetQueryStr,
       }
    }
    switch (getType()) {
-      case OBJ_TYPE::STRING:
-      {
+      case OBJ_TYPE::STRING: {
          ffs.reserve(2 * size + 2);
          ffs += '"';
          int i = 0;
@@ -2340,7 +2371,7 @@ string FFJSON::stringify (bool json, bool bGetQueryStr,
                   ffs += val.string[i];
                   break;
             }
-            i++;
+            ++i;
          }
          ffs += '"';
          return ffs;
@@ -2375,6 +2406,9 @@ string FFJSON::stringify (bool json, bool bGetQueryStr,
          }
       }
       case OBJ_TYPE::OBJECT: {
+         if (size==0) {
+            return "{}";
+         }
          map<string, FFJSON*>& objmap = *(val.pairs);
          ffs = "{";
          map<string, FFJSON*>::iterator i;
@@ -2416,7 +2450,7 @@ string FFJSON::stringify (bool json, bool bGetQueryStr,
                mpKeyPrettyStringItMap[&i->first] = itPretty;
                lfpo.name = &i->first;
                if (t != NUL) {
-                  ms.append(i->second->stringify(json, false, &lfpo));
+                  ms.append(i->second->stringify(json, false, &lfpo, lnLvl));
                } else if (json) {
                   ms.append("null");
                }
@@ -2454,7 +2488,7 @@ string FFJSON::stringify (bool json, bool bGetQueryStr,
          lfpo.pObj = pObj;
          ffs = "{";
          for (FFJSON* fp : objset) {
-            ffs += fp->stringify(json, false, &lfpo);
+            ffs += fp->stringify(json, false, &lfpo, lnLvl);
             ffs += ',';
          }
          ffs.pop_back();
@@ -2479,7 +2513,7 @@ string FFJSON::stringify (bool json, bool bGetQueryStr,
                if ((isEFlagSet(B64ENCODE_CHILDREN))&&
                    !isEFlagSet(B64ENCODE_STOP))
                   objarr[i]->setEFlag(B64ENCODE_CHILDREN);
-               ffs.append(objarr[i]->stringify(json, false, &lfpo));
+               ffs.append(objarr[i]->stringify(json, false, &lfpo, lnLvl));
             }
             if (++i != objarr.size()) {
                if (objarr[i] && !objarr[i]->isType(UNDEFINED)) {
@@ -2494,11 +2528,18 @@ string FFJSON::stringify (bool json, bool bGetQueryStr,
       }
       case LINK: {
          vector<string>* vtProp = getFeaturedMember(FM_LINK).link;
-         if (returnNameIfDeclared(*vtProp, pObj) != NULL) {
-            return implode(".", *vtProp);
+         if ((lnLvl<=0 || returnNameIfDeclared(*vtProp, pObj) != NULL) &&
+             !isEFlagSet(LONG_LAST_LN)
+         ) {
+            string ln = implode(".", *vtProp);
+            return json?"\""+ln+"\"":ln;
          } else {
-            return val.fptr->stringify(json, false, pObj);
+            return val.fptr->stringify(json, false, pObj,
+                                       lnLvl?lnLvl-1:0);
          }
+      }
+      case DLINK: {
+         return val.fptr->stringify(json, false, pObj, lnLvl?lnLvl-1:0);
       }
       case BINARY: {
          ffs += "(" + to_string(size) + ")";
@@ -2525,7 +2566,7 @@ string FFJSON::stringify (bool json, bool bGetQueryStr,
    if (isEFlagSet(EXTENDED) && !isType(STRING)) {
       FFJSON* pParent = getFeaturedMember(FM_PARENT).m_pParent;
       ffs += '|';
-      ffs += pParent->stringify(false, false, pObj);
+      ffs += pParent->stringify(false, false, pObj,lnLvl);
    }
    return ffs;
 }
@@ -2549,7 +2590,7 @@ string FFJSON::prettyString (
          ps = "\"";
          char* pcNewLnCharPos = strchr(val.string, '\n');
          bool hasNewLine = (pcNewLnCharPos != NULL);
-         if (pObj->m_bGiveFirstLine) {
+         if (pObj && pObj->m_bGiveFirstLine) {
             if (hasNewLine) {
                ps.append(val.string, 0, pcNewLnCharPos - val.string);
                pObj->m_bGiveFirstLine = false;
@@ -2618,6 +2659,9 @@ string FFJSON::prettyString (
          break;
       }
       case OBJ_TYPE::OBJECT: {
+         if (size==0) {
+            return "{}";
+         }
          map<string, FFJSON*>& objmap = *(val.pairs);
          map<string, FFJSON*>::iterator i;
          map<string, vector<int> > msviClWidths;
@@ -2715,7 +2759,7 @@ string FFJSON::prettyString (
                   ms += '\n';
                }
                ffPairLst.push_back(string());
-               itPretty++;
+               ++itPretty;
             }
             if (fmMapSequence.m_pvpsMapSequence) {
                if (iMapSeqIndexer < fmMapSequence.m_pvpsMapSequence->size()) {
@@ -2742,7 +2786,7 @@ string FFJSON::prettyString (
             itPretty = ffPairLst.begin();
             while (itPretty != ffPairLst.end()) {
                ps += *itPretty;
-               itPretty++;
+               ++itPretty;
             }
             ps.append(indent, '\t');
          }
@@ -2802,7 +2846,7 @@ string FFJSON::prettyString (
                             m_msviClWidths)[sChildName];
                ps = "[";
                int iNameLength = 0;
-               if (pObj->value->isType(OBJECT)) {
+               if (pObj && pObj->value->isType(OBJECT)) {
                   iNameLength = pObj->name->length() + 3;
                }
                ps.append((((vClWidths[0] + 7) / 8)*8 - 8 * iParentHeight -
@@ -2969,13 +3013,19 @@ string FFJSON::prettyString (
       case LINK: {
          vector<string>* vtProp = getFeaturedMember(FM_LINK).link;
          if (returnNameIfDeclared(*vtProp, pObj) != NULL) {
-            return implode(".", *vtProp);
+            string ln = implode(".", *vtProp);
+            return json?"\""+ln+"\"":ln;
          } else {
             return val.fptr->prettyString(
                json, printComments, indent + 1,
                pObj, printFilePath, save);
          }
          break;
+      }
+      case DLINK: {
+            return val.fptr->prettyString(
+               json, printComments, indent + 1,
+               pObj, printFilePath, save);
       }
       case BINARY: {
          ps += "(" + to_string (size) + ")";
@@ -3075,14 +3125,21 @@ FFJSON::operator float () {
 FFJSON::operator bool () {
    FFJSON* fp = this;
    if (isType(LINK)) {
-      fp = this->val.fptr;
+      fp = val.fptr;
    };
-   if (!fp->isType(BOOL) && !fp->isType(UNDEFINED) && !fp->isType(NUL)) {
-      return true;
-   } else if (fp->isType(BOOL)) {
-      return fp->val.boolean;
-   } else {
-      return false;
+   OBJ_TYPE t = fp->getType();
+   switch(t) {
+      case BOOL:
+         return fp->val.boolean;
+      case UNDEFINED:
+      case NUL:
+         return false;
+      case STRING:
+         return size;
+      case NUMBER:
+         return (bool)fp->val.number;
+      default:
+         return true;
    }
 }
 
@@ -3232,7 +3289,7 @@ FFJSON& FFJSON::operator = (FFJSON* f) {
       fm.m_pTimeStamp->Update();
    }
    freeObj(true);
-   setType(LINK);
+   setType(DLINK);
    val.fptr = f;
    return *this;
 }
@@ -3522,10 +3579,10 @@ string FFJSON::queryString() {
 }
 
 FFJSON* FFJSON::answerObject (
-   FFJSON * queryObject, FFJSONPObj* pObj,
+   FFJSON* queryObject, FFJSONPObj* pObj,
    FerryTimeStamp lastUpdateTime
 ) {
-   FFJSON * ao = NULL;
+   FFJSON* ao = NULL;
    FFJSONPObj ffpThisObj;
    ffpThisObj.value = this;
    ffpThisObj.pObj = pObj;
@@ -3551,7 +3608,7 @@ FFJSON* FFJSON::answerObject (
                FFJSON::Iterator itUpdateTime =
                   pObj->value->find(*pObj->name);
                ++itUpdateTime;
-               if (itUpdateTime.GetIndex().find("(Time)") == 0) {
+               if (itUpdateTime.getIndex().find("(Time)") == 0) {
                   if (((FerryTimeStamp&)(*itUpdateTime)>=lastUpdateTime)) {
                      if(queryObject->isType(OBJECT)||queryObject->isType(ARRAY))
                         queryObject->setQType(UPDATE);
@@ -3658,8 +3715,7 @@ FFJSON* FFJSON::answerObject (
                   fmAOMapSequence.m_pvpsMapSequence->
                      push_back(prNew.first);
                } else if (fmAOMapSequence.m_pvpsMapSequence) {
-                  delete fmAOMapSequence.m_pvpsMapSequence;
-                  fmAOMapSequence.m_pvpsMapSequence = NULL;
+                  ao->deleteFeaturedMember(FM_MAP_SEQUENCE);
                }
             }
             if (j != itEnd && i->first == j->first) {
@@ -4075,12 +4131,12 @@ FFJSON::Iterator::Iterator (const FFJSON& orig, bool end) {
 }
 
 FFJSON::Iterator::Iterator (map<string, FFJSON*>::iterator pi) {
-   this->ui.pi = pi;
+   ui.pi = pi;
    type = BIG_OBJECT;
 }
 
 FFJSON::Iterator::Iterator (vector<FFJSON*>::iterator ai) {
-   this->ui.ai = ai;
+   ui.ai = ai;
    type = ARRAY;
 }
 
@@ -4104,24 +4160,35 @@ void FFJSON::Iterator::copy (const Iterator& i) {
 }
 
 void FFJSON::Iterator::init (const FFJSON& orig, bool end) {
-   if (orig.isType(ARRAY)) {
-      type = ARRAY;
-      ui.ai = end ? orig.val.array->end() : orig.val.array->begin();
-      m_uContainerPs.m_pVector=orig.val.array;
-   } else if (orig.isType(OBJECT)) {
-      FeaturedMember fm = orig.getFeaturedMember(FM_MAP_SEQUENCE);
-      type = BIG_OBJECT;
-      if (fm.m_pvpsMapSequence != NULL) {
-         ui.pai = end ? fm.m_pvpsMapSequence->end() : fm.m_pvpsMapSequence
-            ->begin();
-         type = OBJECT;
-         m_uContainerPs.m_pMapVector=fm.m_pvpsMapSequence;
-      } else {
-         ui.pi = end ? orig.val.pairs->end() : orig.val.pairs->begin();
-         m_uContainerPs.m_pMap=orig.val.pairs;
+   switch (orig.getType()) {
+      case ARRAY: {
+         type = ARRAY;
+         ui.ai = end ? orig.val.array->end() : orig.val.array->begin();
+         m_uContainerPs.m_pVector=orig.val.array;
+         break;
       }
-   } else {
-      type = NUL;
+      case OBJECT: {
+         FeaturedMember fm = orig.getFeaturedMember(FM_MAP_SEQUENCE);
+         type = BIG_OBJECT;
+         if (fm.m_pvpsMapSequence != NULL) {
+            ui.pai = end ? fm.m_pvpsMapSequence->end() : fm.m_pvpsMapSequence
+               ->begin();
+            type = OBJECT;
+            m_uContainerPs.m_pMapVector=fm.m_pvpsMapSequence;
+         } else {
+            ui.pi = end ? orig.val.pairs->end() : orig.val.pairs->begin();
+            m_uContainerPs.m_pMap=orig.val.pairs;
+         }
+         break;         
+      }
+      case SET_TYPE: {
+         type = SET_TYPE;
+         ui.si = end ? orig.val.set->end():orig.val.set->begin();
+         m_uContainerPs.m_pSet=orig.val.set;
+         break;
+      }
+      default:
+         type = NUL;
    }
 }
 
@@ -4130,7 +4197,7 @@ FFJSON::Iterator& FFJSON::Iterator::operator = (const Iterator& i) {
    return *this;
 }
 
-string FFJSON::Iterator::GetIndex () {
+string FFJSON::Iterator::getIndex () {
    switch (type) {
       case OBJECT:
          return (*ui.pai)->first;
@@ -4146,7 +4213,7 @@ string FFJSON::Iterator::GetIndex () {
    }
 }
 
-int FFJSON::Iterator::GetIndex (const FFJSON& rCurArray) {
+int FFJSON::Iterator::getIndex (const FFJSON& rCurArray) {
    if (type == ARRAY) {
       return ui.ai - rCurArray.val.array->begin();
    } else {
@@ -4163,6 +4230,8 @@ FFJSON& FFJSON::Iterator::operator * () {
       return *(*ui.pai)->second;
    } else if (type == ARRAY) {
       return **ui.ai;
+   } else if (type == SET_TYPE) {
+      return **ui.si;
    } else {
       return **ui.ai;
    }
@@ -4175,6 +4244,8 @@ FFJSON* FFJSON::Iterator::operator -> () {
       return (*ui.pai)->second;
    } else if (type == ARRAY) {
       return &(**(ui.ai));
+   } else if (type == SET_TYPE) {
+      return &(**(ui.si));
    } else {
       return NULL;
    }
@@ -4193,6 +4264,8 @@ FFJSON::Iterator& FFJSON::Iterator::operator ++ () {
       }
    } else if (type == ARRAY) {
       ++ui.ai;
+   } else if (type == SET_TYPE) {
+      ++ui.si;
    }
    return *this;
 }
@@ -4207,15 +4280,17 @@ FFJSON::Iterator& FFJSON::Iterator::operator -- () {
    if (type == BIG_OBJECT) {
       ui.pi--;
       while (ui.pi->second->isEFlagSet(COMMENT)) {
-         ui.pi--;
+         --ui.pi;
       }
    } else if (type == OBJECT) {
-      ui.pai--;
+      --ui.pai;
       while ((*ui.pai)->second->isEFlagSet(COMMENT)) {
-         ui.pai--;
+         --ui.pai;
       }
    } else if (type == ARRAY) {
-      ui.ai--;
+      --ui.ai;
+   } else if (type == SET_TYPE) {
+      --ui.si;
    }
    return *this;
 }
@@ -4235,6 +4310,8 @@ bool FFJSON::Iterator::operator == (const Iterator & i) {
          return (ui.pi == i.ui.pi);
       } else if (type == ARRAY) {
          return ui.ai == i.ui.ai;
+      } else if (type == SET_TYPE) {
+         return ui.si == i.ui.si;
       } else if (type == NUL) {
          return true;
       }
@@ -4255,7 +4332,14 @@ FFJSON::Iterator::operator const char* () {
 
 FFJSON::Iterator FFJSON::find (string key) {
    if (isType(OBJECT)) {
-      map<string, FFJSON*>::iterator itMap = val.pairs->find(key);
+      char& lc = key.back();
+      ffmap::iterator itMap;
+      if (lc=='*') {
+         key.pop_back();
+         itMap = val.pairs->lower_bound(key);
+         return Iterator(itMap);
+      }
+      itMap = val.pairs->find(key);
       if (itMap == val.pairs->end()) {
          return Iterator();
       }
@@ -4308,7 +4392,7 @@ void FFJSON::headTheHeader (FFJSONPrettyPrintPObj & lfpo) {
    }
 }
 
-ostream& operator << (ostream& out, const FFJSON & f) {
+ostream& operator << (ostream& out, const FFJSON& f) {
    out << f.prettyString();
    return out;
 }
@@ -4332,6 +4416,71 @@ bool operator < (const FFJSON& lhs, const FFJSON& rhs) {
             return (void*)lhs.val.fptr < (void*)rhs.val.fptr;
       }
    }
+   return (const void*)&lhs<(const void*)&rhs;
+}
+
+bool operator == (const FFJSON& lhs, const FFJSON& rhs) {
+   ffl_debug(FFJ_MAIN, "== operator");
+   if (!lhs.isType(rhs.getType())) {
+      if (lhs.isType(FFJSON::LINK)) {
+         return lhs.val.fptr == &rhs;
+      } else if (rhs.isType(FFJSON::LINK)) {
+         return rhs.val.fptr == &lhs;
+      }
+      return false;
+   }
+   switch(lhs.getType()) {
+      case FFJSON::NUMBER:
+         return lhs.val.number == rhs.val.number;
+      case FFJSON::TIME:
+         return *lhs.val.m_pFerryTimeStamp == *rhs.val.m_pFerryTimeStamp;
+      case FFJSON::STRING:
+      case FFJSON::XML:
+         if (*lhs.val.string == *rhs.val.string)
+            return true;
+         else
+            return false;
+      case FFJSON::OBJECT:
+      case FFJSON::BIG_OBJECT: {
+         if (lhs.size != rhs.size)
+            return false;
+         ffmap::iterator it = lhs.val.pairs->begin();
+         while (it!=lhs.val.pairs->end()) {
+            ffmap::iterator rit = rhs.val.pairs->find(it->first);
+            if (rit==rhs.val.pairs->end())
+               return false;
+            if (*rit->second!=*it->second)
+               return false;
+            ++it;
+         }
+         return true;
+      }
+      case FFJSON::SET_TYPE: {
+         if (lhs.size != rhs.size)
+            return false;
+         ffset::iterator lit = lhs.val.set->begin();
+         ffset::iterator rit = rhs.val.set->begin();
+         while (lit!=lhs.val.set->end()) {
+            if (**lit!=**rit)
+               return false;
+            ++rit;++lit;
+         }
+         return true;
+      }
+      case FFJSON::ARRAY:
+         if (lhs.size != rhs.size)
+            return false;
+         for (int i=0; i<lhs.size;++i)
+            if (*(*rhs.val.array)[i]!=*(*lhs.val.array)[i])
+               return false;
+         return true;
+      case FFJSON::LINK:
+      case FFJSON::DLINK:
+         return *lhs.val.fptr == *rhs.val.fptr;
+      default:
+         return (void*)lhs.val.fptr == (void*)rhs.val.fptr;
+   }
+
    return (const void*)&lhs<(const void*)&rhs;
 }
 
@@ -4372,7 +4521,7 @@ FFJSON* FFJSON::MarkAsUpdatable(string link, const FFJSON& rParent) {
    return NULL;
 }
 
-FFJSON * FFJSON::UnMarkUpdatable(string link, const FFJSON & rParent) {
+FFJSON* FFJSON::UnMarkUpdatable(string link, const FFJSON& rParent) {
    FFJSON* pParent = const_cast<FFJSON*> (&rParent);
    if (rParent.isType(OBJECT) || rParent.isType(ARRAY)) {
       map<FFJSON*, FFJSON*> rOrigParent;
@@ -4451,6 +4600,6 @@ int FFJSON::save (
    return -1;
 }
 
-bool FFJSON::FFPtrCmp::operator() (const FFJSON* a, const FFJSON* b) const {
+bool FFPtrCmp::operator() (const FFJSON* a, const FFJSON* b) const {
    return *a < *b;
 }

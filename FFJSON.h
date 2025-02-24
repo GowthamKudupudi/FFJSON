@@ -22,11 +22,20 @@
 #include <stdint.h>
 #include <cstring>
 
+typedef unsigned int uint;
+
 using namespace std;
 
 enum _ffj_log_level {
    FFJ_MAIN = 1 << 0
 };
+class FFJSON;
+struct FFPtrCmp {
+   bool operator() (const FFJSON* a, const FFJSON* b) const;
+};
+typedef set<FFJSON*, FFPtrCmp> ffset;
+typedef map<string, FFJSON*> ffmap;
+typedef vector<FFJSON*> ffvec;
 
 class DLLExport FFJSON {
 public:
@@ -45,6 +54,7 @@ public:
       OBJECT,
       BIG_OBJECT,
       LINK,
+      DLINK, //Direct link
       NUL
    };
    
@@ -68,7 +78,7 @@ public:
       HAS_COMMENT          = 1 << 20,
       
       EXTENDED             = 1 << 21, //ARRAY N OBJECT //FM
-      LONG_LAST_LN         = 1 << 21, //STRING //NO_FM
+      LONG_LAST_LN         = 1 << 21, //STRING//linkResolvSerial //NO_FM
       
       PRECISION            = 1 << 22, //NUMBER //FM
       EXT_VIA_PARENT       = 1 << 22, //ARRAY N OBJECT //FM
@@ -121,8 +131,8 @@ public:
       Iterator (map<string, FFJSON*>::iterator pi);
       Iterator (vector<FFJSON*>::iterator ai);
       Iterator (
-         vector<map<string, FFJSON*>::iterator >::iterator pai,
-         vector<map<string,FFJSON*>::iterator>* pMapItVec
+         vector<ffmap::iterator>::iterator pai,
+         vector<ffmap::iterator>* pMapItVec
       );
       virtual     ~Iterator ();
       void        init (const FFJSON& orig, bool end = false);
@@ -142,13 +152,13 @@ public:
        * Should be only used on OBJECT type iterators
        * @return name in the name-value pair of the iterator of the OBJECT
        */
-      string GetIndex();
+      string getIndex ();
       /**
        * Should be only use on ARRAY type iterators
        * @param rCurrArray should be the FFJSON Object of the iterator
        * @return index of the iterator of the ARRAY
        */
-      int GetIndex(const FFJSON& rCurrArray);
+      int getIndex (const FFJSON& rCurrArray);
       
    private:
       uint8_t  type;
@@ -157,6 +167,7 @@ public:
       union IteratorUnion {
          map<string, FFJSON*>::iterator                     pi;
          vector<FFJSON*>::iterator                          ai;
+         ffset::iterator                                    si;
          vector<map<string, FFJSON*>::iterator >::iterator  pai;
          
          IteratorUnion () {
@@ -182,6 +193,9 @@ public:
          IteratorUnion (const map<string, FFJSON*>::iterator& itMap) {
             pi = itMap;
          }
+         IteratorUnion (const ffset::iterator& itSet) {
+            si = itSet;
+         }
          IteratorUnion& operator = (const IteratorUnion& rFIt) {
             memcpy(this, &rFIt, sizeof (IteratorUnion));
             return *this;
@@ -198,9 +212,10 @@ public:
          }
       } ui;
       union ContainerPs {
-         map<string, FFJSON*>*                     m_pMap;
-         vector<FFJSON*>*                          m_pVector;
-         vector<map<string, FFJSON*>::iterator>*   m_pMapVector;
+         ffmap*                     m_pMap;
+         ffvec*                     m_pVector;
+         vector<ffmap::iterator>*   m_pMapVector;
+         ffset*                     m_pSet;
       } m_uContainerPs;
    };
    
@@ -345,10 +360,6 @@ public:
       string   m_sLink;
    };
 
-   struct FFPtrCmp {
-      bool operator() (const FFJSON* a, const FFJSON* b) const;
-   };
-   typedef set<FFJSON*, FFPtrCmp> ffset;
    union FFValue {
       char*                      string;
       vector<FFJSON*>*           array;
@@ -475,7 +486,7 @@ public:
     */
    string stringify (
       bool json = false, bool GetQueryStr = false,
-      FFJSONPrettyPrintPObj* pObj = NULL
+      FFJSONPrettyPrintPObj* pObj = NULL, uint lnLvl = 0
    ) const;
    
    #define GetQueryString(...) stringify(false,true,NULL);

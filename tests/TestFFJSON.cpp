@@ -22,6 +22,8 @@
 #include <algorithm>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
+#include <ios>
 #include "FFJSON.h"
 
 typedef const char* ccp;
@@ -35,6 +37,46 @@ int child_exit_status = 0;
 FF_LOG_TYPE fflAllowedType = (FF_LOG_TYPE)(FFL_DEBUG | FFL_INFO);
 unsigned int fflAllowedLevel = 9;
 
+void mem_usage(double& vm_usage, double& resident_set) {
+   vm_usage = 0.0;
+   resident_set = 0.0;
+   //get info from proc directory
+   ifstream stat_stream("/proc/self/stat",ios_base::in);
+   //create some variables to get info
+   string pid, comm, state, ppid, pgrp, session, tty_nr;
+   string tpgid, flags, minflt, cminflt, majflt, cmajflt;
+   string utime, stime, cutime, cstime, priority, nice;
+   string O, itrealvalue, starttime;
+   unsigned long vsize;
+   long rss;
+   // don't care about the rest
+   stat_stream >> pid >> comm >> state >> ppid >> pgrp >> session >> tty_nr
+   >> tpgid >> flags >> minflt >> cminflt >> majflt >> cmajflt
+   >> utime >> stime >> cutime >> cstime >> priority >> nice
+   >> O >> itrealvalue >> starttime >> vsize >> rss; 
+   stat_stream.close();
+   // for x86-64 is configured to use 2MB pages
+   long page_size_kb = sysconf(_SC_PAGE_SIZE) / 1024; 
+   vm_usage = vsize / 1024.0;
+   resident_set = rss * page_size_kb;
+}
+
+struct Test_ {
+   Test_ () {
+      cout << "TestConstructor" << endl;
+   };
+   ~Test_ () {
+      cout << "TestDestructor" << endl;
+   };
+};
+Test_ testFunc1 () {
+   Test_ t;
+   return t;
+}
+Test_ testFunc2 () {
+   Test_ t;
+   return t;
+}
 void test1 () {
    cout << "===================================================" << endl;
    cout << "               TestFFJSON test 1                   " << endl;
@@ -430,6 +472,45 @@ void test18 () {
    cout << f << endl;
 }
 
+void test19 () {
+   cout << "===================================================" << endl;
+   cout << "                       Test_  					      " << endl;
+   cout << "===================================================" << endl;
+   Test_ t1 = testFunc1();
+   //Test_& t2 = testFunc1();
+   Test_ t3 = testFunc1();
+   //Test_& t4 = testFunc1();
+}
+
+FFJSON t;
+void test20 () {
+   cout << "===================================================" << endl;
+   cout << "                       StressTest				      " << endl;
+   cout << "===================================================" << endl;
+   for (int i=0; i<1; ++i) {
+      string a("a");
+      a+=to_string(i);
+      for (int j=0; j<1000;++j) {
+         for (int k=0; k<10;++k) {
+            string c = "c";
+            c += to_string(k);
+            string val = a +"b" + to_string(j) + c;
+            t[a][j][c]=val;
+            //cout << val;
+         }
+      }
+      cout << ".";fflush(stdout);
+   }
+   double vm, rss;
+   mem_usage(vm, rss);
+   double tt = 3.6789787878*pow(10,6);
+   printf("%3.0lf", tt);
+   cout << "Virtual Memory: " << vm << "\nResident set size: " << rss << endl;
+}
+
+void test21 () {
+   cout << t["a1"][666]["c8"] << endl;
+}
 
 int main (int argc, char** argv) {
    cout << "%SUITE_STARTING% TestFFJSON" << endl;
@@ -527,14 +608,14 @@ int main (int argc, char** argv) {
    ftsEnd.Update();
    ftsDiff = ftsEnd - ftsStart;
    cout << "%TEST_FINISHED% time=" << ftsDiff << " test12 " << endl;
-*/
+
    cout << "%TEST_STARTED% test13\n" << endl;
    ftsStart.Update();
    test13();
    ftsEnd.Update();
    ftsDiff = ftsEnd - ftsStart;
    cout << "%TEST_FINISHED% time=" << ftsDiff << " test13 " << endl;
-/*
+
    cout << "%TEST_STARTED% test15\n" << endl;
    ftsStart.Update();
    test15();
@@ -562,7 +643,28 @@ int main (int argc, char** argv) {
    ftsEnd.Update();
    ftsDiff = ftsEnd - ftsStart;
    cout << "%TEST_FINISHED% time=" << ftsDiff << " test18\n" << endl;
-*/
+
+   cout << "%TEST_STARTED% test19" << endl;
+   ftsStart.Update();
+   test19();
+   ftsEnd.Update();
+   ftsDiff = ftsEnd - ftsStart;
+   cout << "%TEST_FINISHED% time=" << ftsDiff << " test19\n" << endl;
+*/   
+   cout << "%TEST_STARTED% test20" << endl;
+   ftsStart.Update();
+   test20();
+   ftsEnd.Update();
+   ftsDiff = ftsEnd - ftsStart;
+   cout << "%TEST_FINISHED% time=" << ftsDiff << " test20\n" << endl;
+   
+   cout << "%TEST_STARTED% test21" << endl;
+   ftsStart.Update();
+   test21();
+   ftsEnd.Update();
+   ftsDiff = ftsEnd - ftsStart;
+   cout << "%TEST_FINISHED% time=" << ftsDiff << " test21\n" << endl;
+   
    ftsSuiteEnd.Update();
    ftsDiff = ftsSuiteEnd-ftsSuiteStart;
    cout << "%SUITE_FINISHED% time=" << ftsDiff << endl;
