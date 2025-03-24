@@ -2529,6 +2529,7 @@ string FFJSON::stringify (bool json, bool bGetQueryStr,
       case LINK: {
          vector<string>* vtProp = getFeaturedMember(FM_LINK).link;
          if ((lnLvl<=0 || returnNameIfDeclared(*vtProp, pObj) != NULL) &&
+         //if ((returnNameIfDeclared(*vtProp, pObj) != NULL) &&
              !isEFlagSet(LONG_LAST_LN)
          ) {
             string ln = implode(".", *vtProp);
