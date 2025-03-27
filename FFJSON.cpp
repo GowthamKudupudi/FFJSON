@@ -1944,7 +1944,7 @@ FFJSON* FFJSON::returnNameIfDeclared (vector<string>& prop,
                   break;
                }
             } catch (exception e) {
-               //break;
+               break;
             }
             if (index < fp->size) {
                fp = (*fp->val.array)[index];
