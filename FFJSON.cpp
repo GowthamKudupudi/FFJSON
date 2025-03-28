@@ -3398,8 +3398,8 @@ void FFJSON::trim() {
          *fmMapSeq.m_pvpsMapSequence;
       i = vmpspfPairs.size() - 1;
       while (i >= 0) {
-         if (((*vmpspfPairs[i]->second).isType(UNDEFINED)&&!(*vmpspfPairs[i]
-                                                             ->second).isQType(NONE)) || (*vmpspfPairs[i]->second).
+         if (((*vmpspfPairs[i]->second).isType(UNDEFINED)
+              &&!(*vmpspfPairs[i]->second).isQType(NONE)) || (*vmpspfPairs[i]->second).
              isType(NUL)) {
             delete vmpspfPairs[i]->second;
             val.pairs->erase(vmpspfPairs[i]);
