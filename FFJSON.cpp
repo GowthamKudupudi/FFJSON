@@ -924,10 +924,10 @@ void FFJSON::init (
                while ((ffjson[i] >= '0' && ffjson[i] <= '9') ||
                       (ffjson[i] == '.' && (ffjson[i + 1] >= '0' &&
                                             ffjson[i + 1] <= '9'))) {
-                  ++i;
                   if (ffjson[i]=='.') {
                      precision = i - numNail + 1;
                   }
+                  ++i;
                }
                size = i - numNail;
                if (!precision)
@@ -2255,10 +2255,11 @@ FFJSON& FFJSON::operator [] (const string& prop) {
       ffmap::iterator it = val.pairs->find(prop);
       if (it != val.pairs->end()) {
          if (it->second != NULL) {
-            if (it->second->isType(LINK)) {
-               return *(it->second->val.fptr);
+            FFJSON* prf = it->second;
+            while (prf->isType(LINK)) {
+               prf = prf->val.fptr;
             }
-            return *(it->second);
+            return *prf;
          } else {
             obj = new FFJSON();
             return *((*val.pairs)[prop] = obj);
@@ -2296,7 +2297,11 @@ FFJSON& FFJSON::operator [] (const int index) {
          if ((*val.array)[index] == NULL) {
             (*val.array)[index] = new FFJSON(NUL);
          } else if ((*val.array)[index]->isType(LINK)) {
-            return *((*val.array)[index]->val.fptr);
+            FFJSON* prf = (*val.array)[index];
+            while (prf->isType(LINK)) {
+               prf = prf->val.fptr;
+            }
+            return *prf;
          }
          return *((*val.array)[index]);
       } else {
@@ -4104,7 +4109,9 @@ bool FFJSON::inherit (FFJSON& rObj, FFJSONPObj* pFPObj) {
 
 FFJSON::Iterator FFJSON::begin () {
    FFJSON* fp = this;
-   if (isType(LINK))fp = val.fptr;
+   if (isType(LINK)) {
+      return val.fptr->begin();
+   }
    Iterator i(*fp);
 
    return i;
@@ -4112,7 +4119,9 @@ FFJSON::Iterator FFJSON::begin () {
 
 FFJSON::Iterator FFJSON::end () {
    FFJSON* fp = this;
-   if (isType(LINK))fp = val.fptr;
+   if (isType(LINK)) {
+      return val.fptr->begin();
+   }
    Iterator i(*fp, true);
 
    return i;
