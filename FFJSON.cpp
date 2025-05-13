@@ -2331,6 +2331,14 @@ FFJSON& FFJSON::operator [] (const int index) {
    }
 };
 
+FFJSON& FFJSON::operator * () {
+   FFJSON* fp = this;
+   if (isType(LINK)) {
+      fp = fp->val.fptr;
+   }
+   return *fp;
+}
+
 /**
  * converts FFJSON object to json string
  * @param encode_to_base64 if true then the binary data is base64 encoded

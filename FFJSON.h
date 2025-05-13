@@ -578,6 +578,8 @@ public:
    FFJSON& operator = (const bool& b);
    FFJSON& operator = (const FFJSON& f);
    FFJSON& operator = (FFJSON* f);
+
+   FFJSON& operator * ();
    
    template<typename T>
    operator T& () {
