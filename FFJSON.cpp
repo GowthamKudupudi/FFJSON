@@ -431,18 +431,20 @@ void FFJSON::init (
 ) {
    if (pObj) {
       if (pObj->name) {
-         if (pObj->value->isType(OBJECT)) {
-            pair<map<string, FFJSON*>::iterator, bool> prNew =
-               pObj->value->val.pairs->insert(
-                  pair<string, FFJSON*>(*pObj->name, this)
-               );
-            if (pObj->value->size < MAX_ORDERED_MEMBERS) {
-               pObj->m_pvpsMapSequence->push_back(prNew.first);
+         if (!isEFlagSet(FILE)) {
+            if (pObj->value->isType(OBJECT)) {
+               pair<map<string, FFJSON*>::iterator, bool> prNew =
+                  pObj->value->val.pairs->insert(
+                     pair<string, FFJSON*>(*pObj->name, this)
+                  );
+               if (pObj->value->size < MAX_ORDERED_MEMBERS) {
+                  pObj->m_pvpsMapSequence->push_back(prNew.first);
+               }
+            } else if (pObj->value->isType(ARRAY)) {
+               pObj->value->val.array->push_back(this);
             }
-         } else if (pObj->value->isType(ARRAY)) {
-            pObj->value->val.array->push_back(this);
+            ++pObj->value->size;
          }
-         ++pObj->value->size;
       } else {
          pObj=pObj->pObj;//it must be link
       }
@@ -3678,8 +3680,7 @@ FFJSON* FFJSON::answerObject (
             goto skiporig;
          j = i;
          fmOrigMapSequence = fmMapSequence;
-         fmMapSequence = getFeaturedMember(
-            FM_MAP_SEQUENCE);
+         fmMapSequence = getFeaturedMember(FM_MAP_SEQUENCE);
          if (fmMapSequence.m_pvpsMapSequence) {
             if (iMapSeqIndexer < fmMapSequence.m_pvpsMapSequence->
                 size()) {
