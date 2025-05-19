@@ -2709,7 +2709,6 @@ string FFJSON::prettyString (
          int iLastNwLnIndex = 0;
          if (isEFlagSet(EXT_VIA_PARENT)) {
             if (isEFlagSet(EXTENDED)) {
-               ps = "{\n";
                iLastNwLnIndex = 1;
 
             } else {
@@ -2719,7 +2718,6 @@ string FFJSON::prettyString (
          } else if (isEFlagSet(HAS_CHILDREN)) {
 
          } else {
-            ps = size?"{\n":"{";
          }
          ffPairLst.push_back(string());
          list<string>::iterator itPretty = ffPairLst.begin();
@@ -2789,6 +2787,7 @@ string FFJSON::prettyString (
          }
          ffPairLst.pop_back();
          //headTheHeader(lfpo);
+         ps="{";
          if (ffPairLst.size() > 0) {
             string& rLastKeyValStr = ffPairLst.back();
             const string& key = *memKeyFFPairMap[&rLastKeyValStr];
@@ -2800,6 +2799,7 @@ string FFJSON::prettyString (
             }
             rLastKeyValStr += '\n';
             itPretty = ffPairLst.begin();
+            ps += "\n";
             while (itPretty != ffPairLst.end()) {
                ps += *itPretty;
                ++itPretty;

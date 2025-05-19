@@ -510,6 +510,9 @@ void test20 () {
 
 void test21 () {
    cout << t["a1"][666]["c8"] << endl;
+   FFJSON t2;
+   (int)t2["id"]==1;
+   cout << t2 << endl;
 }
 
 int main (int argc, char** argv) {
@@ -650,14 +653,14 @@ int main (int argc, char** argv) {
    ftsEnd.Update();
    ftsDiff = ftsEnd - ftsStart;
    cout << "%TEST_FINISHED% time=" << ftsDiff << " test19\n" << endl;
-*/   
+
    cout << "%TEST_STARTED% test20" << endl;
    ftsStart.Update();
    test20();
    ftsEnd.Update();
    ftsDiff = ftsEnd - ftsStart;
    cout << "%TEST_FINISHED% time=" << ftsDiff << " test20\n" << endl;
-   
+*/   
    cout << "%TEST_STARTED% test21" << endl;
    ftsStart.Update();
    test21();
