@@ -598,7 +598,7 @@ public:
    operator bool ();
    operator int ();
    operator unsigned int ();
-   
+   operator long ();
 private:
    uint32_t       flags = 0;
    FeaturedMember m_uFM;

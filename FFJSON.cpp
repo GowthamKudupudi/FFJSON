@@ -945,8 +945,10 @@ void FFJSON::init (
                val.number = stod(num, &s);
                FeaturedMember cFM;
                cFM.precision = size-precision;
-               setEFlag(PRECISION);
-               insertFeaturedMember(cFM, FM_PRECISION);
+               if (cFM.precision) {
+                  setEFlag(PRECISION);
+                  insertFeaturedMember(cFM, FM_PRECISION);
+               }
                setType(OBJ_TYPE::NUMBER);
                goto backyard;
             }
@@ -2397,7 +2399,7 @@ string FFJSON::stringify (bool json, bool bGetQueryStr,
             string num(toPreciseStr(val.number, precision));
             return num;
          } else {
-            return to_string(val.number);
+            return toPreciseStr(val.number, 0);
          }
       }
       case OBJ_TYPE::XML: {
@@ -2647,7 +2649,7 @@ string FFJSON::prettyString (
             string num(toPreciseStr(val.number, precision));
             return num;
          } else {
-            return to_string(val.number);
+            return toPreciseStr(val.number, 0);
          }
          break;
       }
@@ -3166,6 +3168,13 @@ FFJSON::operator int () {
    return (int) val.number;
 }
 
+FFJSON::operator long () {
+   if (isType(LINK)) {
+      return (long) (val.fptr->val.number);
+   }
+   return (long) val.number;
+}
+
 FFJSON::operator unsigned int () {
    if (isType(LINK)) {
       return (unsigned int) (val.fptr->val.number);
@@ -3345,6 +3354,10 @@ FFJSON& FFJSON::operator = (const double& d) {
       fm.m_pTimeStamp->Update();
    }
    freeObj(true);
+   FeaturedMember cFM;
+   cFM.precision = 16;
+   setEFlag(PRECISION);
+   insertFeaturedMember(cFM, FM_PRECISION);
    setType(NUMBER);
    val.number = d;
    return *this;
@@ -3356,6 +3369,10 @@ FFJSON& FFJSON::operator = (const float& f) {
       fm.m_pTimeStamp->Update();
    }
    freeObj(true);
+   FeaturedMember cFM;
+   cFM.precision = 8;
+   setEFlag(PRECISION);
+   insertFeaturedMember(cFM, FM_PRECISION);
    setType(NUMBER);
    val.number = f;
    return *this;
