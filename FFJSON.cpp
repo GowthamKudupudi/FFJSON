@@ -1071,15 +1071,25 @@ void FFJSON::init (
                vector<string>* prop = new vector<string>();
                explode(".", subffj, *prop);
                FFJSON* obj = returnNameIfDeclared(*prop, pObj);
-               if (obj) {
-                  setType(LINK);
-                  val.fptr = obj;
-                  FeaturedMember cFM;
-                  cFM.link = prop;
-                  insertFeaturedMember(cFM, FM_LINK);
-               } else {
-                  delete prop;
+               if (!obj) {
+                  int pL=0;
+                  FFJSONPObj* lfpo=pObj;
+                  while (pL<prop->size() && !(*prop)[pL].size()) {
+                     if (!lfpo) {
+                        throw Exception("Invalid synlink label");
+                     }
+                     ++pL;
+                     lfpo=lfpo->pObj;
+                  }
+                  lfpo->s = new SymlinkTrail();
+                  lfpo->s->l=prop;
+                  lfpo->s->ln=this;
                }
+               setType(LINK);
+               val.fptr = obj;
+               FeaturedMember cFM;
+               cFM.link = prop;
+               insertFeaturedMember(cFM, FM_LINK);
             } else {
                setType(NUL);
                size = 0;
@@ -1166,6 +1176,17 @@ void FFJSON::init (
        done:
        ;
        }*/
+   if (pObj->s) {
+      FFJSON* tln=this;
+      for (int i=0;i<pObj->s->l->size();++i) {
+         if (!(*pObj->s->l)[i].size()) {
+            continue;
+         }
+         tln = &(*tln)[(*pObj->s->l)[i]];
+      }
+      pObj->s->ln->val.fptr=tln;
+      delete pObj->s;
+   }
    if (ci != NULL)*ci = i;
 }
 
@@ -1929,10 +1950,19 @@ void FFJSON::deleteFeaturedMember(FeaturedMemType fmt) {
 FFJSON* FFJSON::returnNameIfDeclared (vector<string>& prop,
                                       FFJSON::FFJSONPObj* fpo) const {
    int j = 0;
+   if (fpo==nullptr){
+      fpo=new FFJSON::FFJSONPObj();
+      fpo->value=const_cast<FFJSON*>(this);
+   }
+   int lp=0;
    while (fpo != nullptr) {
       FFJSON* fp = fpo->value;
-      j = 0;
+      j = lp;
       while (j < prop.size()) {
+         if (!prop[lp].size()) {
+            ++lp;
+            break;
+         }
          if (fp->isType(OBJECT)) {
             if (fp->val.pairs->find(prop[j]) != fp->val.pairs->end()) {
                fp = (*fp->val.pairs)[prop[j]];
@@ -1961,45 +1991,11 @@ FFJSON* FFJSON::returnNameIfDeclared (vector<string>& prop,
          ++j;
          if (j == prop.size())return fp;
       }
-      fpo = fpo->pObj;
-   }
-   return nullptr;
-}
-
-const FFJSON* FFJSON::returnFFIfDeclared (vector<string>& prop) const {
-   const FFJSON* fp = this;
-   if (fp->isType(LINK)) {
-      fp = fp->val.fptr;
-   }
-   int j = 0;
-   while (j < prop.size()) {
-      if (fp->isType(OBJECT)) {
-         if (fp->val.pairs->find(prop[j]) != fp->val.pairs->end()) {
-            fp = (*fp->val.pairs)[prop[j]];
-         } else {
-            return nullptr;
-         }
-      } else if (fp->isType(ARRAY)) {
-         int index = -1;
-         try {
-            size_t t;
-            index = stoi(prop[j], &t);
-            if (t != prop[j].length()) {
-               return nullptr;
-            }
-         } catch (exception e) {
-            return nullptr;
-         }
-         if (index < fp->size) {
-            fp = (*fp->val.array)[index];
-         }
-      } else if (fp->isType(LINK)) {
-         fp = fp->val.fptr;
-      } else {
+      if (fpo->value==this) {
+         delete fpo;
          return nullptr;
       }
-      ++j;
-      if (j == prop.size())return fp;
+      fpo = fpo->pObj;
    }
    return nullptr;
 }
@@ -3322,7 +3318,7 @@ FFJSON& FFJSON::operator = (FFJSON* f) {
 FFJSON& FFJSON::addLink (const FFJSON& PObj, string label) {
    vector<string>* prop = new vector<string>();
    explode(".", label, *prop);
-   FFJSON* obj = const_cast<FFJSON*>(PObj.returnFFIfDeclared(*prop));
+   FFJSON* obj = const_cast<FFJSON*>(PObj.returnNameIfDeclared(*prop));
    if (obj) {
       FFJSON* parent = NULL;
       if (!isType(NEW_SET_MEMBER))

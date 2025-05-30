@@ -278,12 +278,16 @@ public:
    struct FFJSONExt {
       FFJSON* base = NULL;
    };
-   
+   struct SymlinkTrail {
+      Link* l = nullptr;
+      FFJSON* ln = nullptr;
+   };
    struct FFJSONPObj {
       const string* name = NULL;
       FFJSON* value = NULL;
       FFJSONPObj* pObj = NULL;
       vector<map<string, FFJSON*>::iterator>* m_pvpsMapSequence;
+      SymlinkTrail* s = nullptr;
    };
    
    struct FFJSONPrettyPrintPObj : FFJSONPObj {
@@ -545,7 +549,6 @@ public:
    void headTheHeader(FFJSONPrettyPrintPObj& lfpo);
    void SelfTest();
    FFJSON& addLink (const FFJSON& obj, string label);
-   const FFJSON* returnFFIfDeclared (vector<string>& prop) const;
    
    FFJSON& operator [] (const char* prop);
    FFJSON& operator [] (const string& prop);
@@ -612,7 +615,8 @@ private:
    static bool inline isTerminatingChar (char c);
    static bool inline isInitializingChar (char c);
    static std::map<FFJSON*, set<FFJSONIterator> > sm_mUpdateObjs;
-   FFJSON* returnNameIfDeclared (vector<string>& prop, FFJSONPObj* fpo) const;
+   FFJSON* returnNameIfDeclared (vector<string>& prop,
+                                 FFJSONPObj* fpo = nullptr) const;
    FFJSON* markTheNameIfExtended (FFJSONPrettyPrintPObj* fpo);
    bool inherit (FFJSON& obj, FFJSONPObj* pFPObj);
    void ReadMultiLinesInContainers (
