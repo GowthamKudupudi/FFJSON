@@ -549,7 +549,7 @@ public:
    void headTheHeader(FFJSONPrettyPrintPObj& lfpo);
    void SelfTest();
    FFJSON& addLink (const FFJSON& obj, string label);
-   
+   FFJSON& addLink (const string&& objPath, const string&& linkPath);
    FFJSON& operator [] (const char* prop);
    FFJSON& operator [] (const string& prop);
    FFJSON& operator [] (const int index);
@@ -628,7 +628,7 @@ private:
       int indent, vector<int>& vClWidths) const;
    LinkNRef GetLinkString(FFJSONPObj* pObj);
 };
-
+static FFJSON nullFFJSON;
 ostream& operator << (ostream& out, const FFJSON& f);
 
 bool operator < (const FFJSON& lhs, const FFJSON& rhs);
