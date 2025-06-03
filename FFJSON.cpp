@@ -4013,6 +4013,21 @@ void FFJSON::erase (int index) {
    }
 }
 
+uint FFJSON::erase (uint start, uint end) {
+   if (end>size) {
+      end=size;
+   }
+   if (start>end){
+      return 0;
+   }
+   if (isType(ARRAY)) {
+      val.array->erase(val.array->begin()+start, val.array->begin()+end);
+      return end-start;
+   }
+   return 0;
+}
+
+
 void FFJSON::erase (FFJSON* value) {
    if (isType(OBJECT)) {
       map<string, FFJSON*>::iterator i = val.pairs->begin();

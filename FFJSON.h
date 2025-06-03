@@ -538,6 +538,7 @@ public:
    void erase (string name);
    void erase (int index);
    void erase (FFJSON* value);
+   uint erase (uint start, uint end);
    int save (
       bool json = false, bool printComments = true, unsigned int indent=0,
       FFJSONPrettyPrintPObj* pObj=NULL, bool printFilePath=true,
