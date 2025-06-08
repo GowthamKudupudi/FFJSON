@@ -1051,6 +1051,11 @@ void FFJSON::init (
             }
             break;
          }
+         case '!': {
+            setType(NUL);
+            pObj->value->setQType(NQUERY);
+            break;
+         }
          case 'n': {
             if (ffjson[i + 1] == 'u' &&
                 ffjson[i + 2] == 'l' &&
@@ -3313,6 +3318,11 @@ FFJSON& FFJSON::operator = (const FFJSON& f) {
       FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
       fm.m_pTimeStamp->Update();
    }
+   if (f.isType(UNDEFINED)) {
+      freeObj();
+      setType(UNDEFINED);
+      return *this;
+   }
    if (!(isType(OBJECT) && f.isType(OBJECT)))
       freeObj(true);
    copy(f, COPY_ALL);
@@ -3671,9 +3681,8 @@ string FFJSON::queryString() {
 
 FFJSON* FFJSON::answerObject (
    FFJSON* queryObject, FFJSONPObj* pObj,
-   FerryTimeStamp lastUpdateTime
+   FerryTimeStamp lastUpdateTime, FFJSON* ao
 ) {
-   FFJSON* ao = NULL;
    FFJSONPObj ffpThisObj;
    ffpThisObj.value = this;
    ffpThisObj.pObj = pObj;
@@ -3733,6 +3742,19 @@ FFJSON* FFJSON::answerObject (
    } else if (queryObject->isQType(QUERY)) {
       ao = new FFJSON(*this);
    } else if (queryObject->isType(getType())) {
+      if (queryObject->isQType(NQUERY)) {
+         FFJSON& rao=*ao;
+         map<string, FFJSON*>::iterator it = val.pairs->begin();
+         while (it != val.pairs->end()) {
+            map<string, FFJSON*>::iterator fit =
+               queryObject->val.pairs->find(it->first);
+            if (fit==queryObject->val.pairs->end()) {
+               rao[it->first] = it->second;
+            }
+            ++it;
+         }
+         return nullptr;
+      }
       if (queryObject->isType(OBJECT)) {
          map<string, FFJSON*>::iterator i, j;
          FeaturedMember fmMapSequence, fmOrigMapSequence;

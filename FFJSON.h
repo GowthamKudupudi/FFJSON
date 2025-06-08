@@ -66,7 +66,8 @@ public:
       QUERY    = 1 << 8,
       SET      = 2 << 8,
       DEL      = 3 << 8,
-      UPDATE   = 4 << 8
+      UPDATE   = 4 << 8,
+      NQUERY   = 5 << 8,
    };
    
    enum E_FLAGS : uint32_t {
@@ -532,8 +533,8 @@ public:
    FFJSON* answerString (FFJSON& queryObject);
    
    FFJSON* answerObject (
-      FFJSON* queryObject, FFJSONPObj* pObj = NULL,
-      FerryTimeStamp lastUpdateTime = FerryTimeStamp()
+      FFJSON* queryObject, FFJSONPObj* pObj = nullptr,
+      FerryTimeStamp lastUpdateTime = FerryTimeStamp(), FFJSON* ao = nullptr
    );
    void erase (string name);
    void erase (int index);
