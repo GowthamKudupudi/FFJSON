@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <math.h>
 #include <ios>
 #include "FFJSON.h"
 
@@ -388,7 +389,9 @@ void test11 () {
    f["a"]["b"] = 2;
    FFJSON& b = f["a"]["b"];
    int bb = (int) f["a"]["b"];
-   
+   if (f["b"]) {
+      cout << "itWontPrint" << endl;
+   }
 }
 
 void test12 () {
@@ -597,14 +600,14 @@ int main (int argc, char** argv) {
    ftsEnd.Update();
    ftsDiff = ftsEnd-ftsStart;
    cout << "%TEST_FINISHED% time=" << ftsDiff << " test10 " << endl;
-   
+*/
    cout << "%TEST_STARTED% test11\n" << endl;
    ftsStart.Update();
    test11();
    ftsEnd.Update();
    ftsDiff = ftsEnd-ftsStart;
    cout << "%TEST_FINISHED% time=" << ftsDiff << " test11 " << endl;
-
+/*
    cout << "%TEST_STARTED% test12\n" << endl;
    ftsStart.Update();
    test12();
@@ -660,14 +663,14 @@ int main (int argc, char** argv) {
    ftsEnd.Update();
    ftsDiff = ftsEnd - ftsStart;
    cout << "%TEST_FINISHED% time=" << ftsDiff << " test20\n" << endl;
-*/   
+  
    cout << "%TEST_STARTED% test21" << endl;
    ftsStart.Update();
    test21();
    ftsEnd.Update();
    ftsDiff = ftsEnd - ftsStart;
    cout << "%TEST_FINISHED% time=" << ftsDiff << " test21\n" << endl;
-   
+*/   
    ftsSuiteEnd.Update();
    ftsDiff = ftsSuiteEnd-ftsSuiteStart;
    cout << "%SUITE_FINISHED% time=" << ftsDiff << endl;

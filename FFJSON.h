@@ -447,6 +447,7 @@ public:
     * @return true if type matched
     */
    bool isType (OBJ_TYPE t) const;
+   bool isLink () const;
    /**
     * Sets type of the object to t
     * @param t
