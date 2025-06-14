@@ -88,7 +88,7 @@ FFJSON::FFJSON (OBJ_TYPE t) {
    } else if (t == NUL) {
       setType(NUL);
    } else {
-      throw Exception("UNDEFINED");
+      setType(UNDEFINED);
    }
 }
 
@@ -876,7 +876,9 @@ void FFJSON::init (
             while (ffjson[i] != ')' && i < j) {
                ++i;
             }
-            size = stoi(ffjson.substr(typeNail, i - typeNail));
+            const_cast<char*>(ffjson.c_str())[i]='\0';
+            size = atoi(ffjson.c_str()+typeNail);
+            const_cast<char*>(ffjson.c_str())[i]=')';
             val.vptr = new uint8_t[size];
             ++i;
             memcpy(val.vptr, ffjson.c_str() + i, size);
@@ -981,6 +983,22 @@ void FFJSON::init (
                      ++i;
                   }
                   if (path.length() > 0) {
+                     if (path[0]!='/') {
+                        FFJSONPObj* lpobj=pObj;
+                        while (lpobj) {
+                           if (lpobj->value->isEFlagSet(FILE)) {
+                              const char* pfn = lpobj->value->
+                                 getFeaturedMember(FM_FILE).m_sFileName;
+                              int pfnl=strlen(pfn)-1;
+                              while (pfn[pfnl]!='/' && pfnl>=0) {
+                                 --pfnl;
+                              }
+                              path.insert(0,pfn,pfnl+1);
+                              break;
+                           }
+                           lpobj=lpobj->pObj;
+                        }
+                     }
                      ifstream ifs(path.c_str(), ios::in | ios::ate);
                      setEFlag(FILE);
                      FeaturedMember fm;
@@ -1081,7 +1099,9 @@ void FFJSON::init (
                   FFJSONPObj* lfpo=pObj->pObj;
                   while (pL<prop->size() && !(*prop)[pL].size()) {
                      if (!lfpo) {
-                        throw Exception("Invalid synlink label");
+                        delete prop;
+                        setType(UNDEFINED);
+                        goto backyard;
                      }
                      ++pL;
                      lfpo=lfpo->pObj;
@@ -2352,7 +2372,7 @@ FFJSON& FFJSON::operator [] (const int index) {
    } else if (isLink()) {
       return (*val.fptr)[index];
    } else {
-      throw Exception("NON ARRAY TYPE");
+      return nullFFJSON;
    }
 };
 
@@ -4524,8 +4544,7 @@ FFJSON::Iterator FFJSON::find (string key) {
       case DLINK:
          return val.fptr->find(key);
       default:
-         throw Exception("ThisContainerDesn'tFindStrings");
-         break;
+         return Iterator(*this, true);
    }
    return Iterator();
 }
