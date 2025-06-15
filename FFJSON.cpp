@@ -876,9 +876,7 @@ void FFJSON::init (
             while (ffjson[i] != ')' && i < j) {
                ++i;
             }
-            const_cast<char*>(ffjson.c_str())[i]='\0';
             size = atoi(ffjson.c_str()+typeNail);
-            const_cast<char*>(ffjson.c_str())[i]=')';
             val.vptr = new uint8_t[size];
             ++i;
             memcpy(val.vptr, ffjson.c_str() + i, size);
