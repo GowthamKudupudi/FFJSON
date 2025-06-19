@@ -426,8 +426,8 @@ public:
    static const                  FeaturedMemType m_FM_LAST = FM_PARENT;
    static const char             OBJ_STR[10][15];
    static map<string, uint8_t>   STR_OBJ;
-   static FFJSON* MarkAsUpdatable(string link, const FFJSON& rParent);
-   static FFJSON* UnMarkUpdatable(string link, const FFJSON& rParent);
+   static FFJSON* MarkAsUpdatable(string& link, const FFJSON& rParent);
+   static FFJSON* UnMarkUpdatable(string& link, const FFJSON& rParent);
    
    void insertFeaturedMember (FeaturedMember& fms, FeaturedMemType fMT);
    FeaturedMember getFeaturedMember (FeaturedMemType fMT) const;
@@ -548,7 +548,7 @@ public:
    ) const;
    Iterator begin ();
    Iterator end();
-   Iterator find(string key);
+   Iterator find(const string& key);
    void headTheHeader(FFJSONPrettyPrintPObj& lfpo);
    void SelfTest();
    FFJSON& addLink (const FFJSON& obj, string label);

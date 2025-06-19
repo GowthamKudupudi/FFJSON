@@ -325,7 +325,7 @@ void FFJSON::copy (const FFJSON& orig, COPY_FLAGS cf, FFJSONPObj* pObj) {
             path.push_back(pFPObjTemp->name);
          } else if (pFPObjTemp->value->isType(ARRAY)) {
             try {
-               if (pFPObjTemp->value->size > stoi(*pFPObjTemp->name)) {
+               if (pFPObjTemp->value->size > atoi(pFPObjTemp->name->c_str())) {
                   bParentFound = true;
                }
                path.push_back(pFPObjTemp->name);
@@ -344,7 +344,7 @@ void FFJSON::copy (const FFJSON& orig, COPY_FLAGS cf, FFJSONPObj* pObj) {
                } else if (pParentRoot->isType(ARRAY)) {
                   try {
                      pParentRoot = (*pParentRoot->val.array)
-                        [stoi(rLnParent[iParentLnIndexer++])];
+                        [atoi(rLnParent[iParentLnIndexer++].c_str())];
                   } catch (Exception e) {
                      pParentRoot = NULL;
                   }
@@ -838,7 +838,7 @@ void FFJSON::init (
                         lengthstr += ffjson[i];
                         ++i;
                      }
-                     length = stoi(lengthstr);
+                     length = atoi(lengthstr.c_str());
                   }
                } else if (!tagset) {
                   xmlTag += ffjson[i];
@@ -2011,13 +2011,8 @@ FFJSON* FFJSON::returnNameIfDeclared (vector<string>& prop,
             }
          } else if (fp->isType(ARRAY)) {
             int index = -1;
-            try {
-               size_t t;
-               index = stoi(prop[j], &t);
-               if (t != prop[j].length()) {
-                  break;
-               }
-            } catch (exception e) {
+            index = atoi(prop[j].c_str());
+            if (index==0 && prop[j][0]!='0') {
                break;
             }
             if (index < fp->size) {
@@ -2083,13 +2078,8 @@ FFJSON* FFJSON::markTheNameIfExtended(FFJSONPrettyPrintPObj * fpo) {
                   }
                } else if (fp->isType(ARRAY)) {
                   int index = -1;
-                  try {
-                     size_t t;
-                     index = stoi(prop[j], &t);
-                     if (t != prop[j].length()) {
-                        break;
-                     }
-                  } catch (exception e) {
+                  index = atoi(prop[j].c_str());
+                  if (index==0 && prop[j][0]!='0') {
                      break;
                   }
                   if (index < fp->size) {
@@ -3261,7 +3251,7 @@ FFJSON& FFJSON::operator = (const char* s) {
                   lengthstr += s[i];
                   i++;
                }
-               length = stoi(lengthstr);
+               length = atoi(lengthstr.c_str());
             }
          } else if (!tagset) {
             xmlTag += s[i];
@@ -4187,7 +4177,7 @@ bool FFJSON::inherit (FFJSON& rObj, FFJSONPObj* pFPObj) {
          } else if (pFPObjTemp->value->isType(ARRAY)) {
             try {
                path.push_back(pFPObjTemp->name);
-               if (pFPObjTemp->value->size > stoi(rLnParent[0])) {
+               if (pFPObjTemp->value->size > atoi(rLnParent[0].c_str())) {
                   bParentFound = true;
                }
             } catch (invalid_argument& ia) {
@@ -4205,7 +4195,7 @@ bool FFJSON::inherit (FFJSON& rObj, FFJSONPObj* pFPObj) {
                } else if (pParentRoot->isType(ARRAY)) {
                   try {
                      pParentRoot = (*pParentRoot->val.array)
-                        [stoi(rLnParent[iParentLnIndexer++])];
+                        [atoi(rLnParent[iParentLnIndexer++].c_str())];
                   } catch (Exception e) {
                      pParentRoot = NULL;
                   }
@@ -4492,14 +4482,14 @@ FFJSON::Iterator::operator const char* () {
    return nullptr;
 }
 
-FFJSON::Iterator FFJSON::find (string key) {
+FFJSON::Iterator FFJSON::find (const string& key) {
    switch (getType()) {
       case OBJECT: {
-         char& lc = key.back();
+         const char lc = key.back();
          ffmap::iterator itMap;
          if (lc=='*') {
-            key.pop_back();
-            itMap = val.pairs->lower_bound(key);
+            string lk = key.substr(0,key.length()-1);
+            itMap = val.pairs->lower_bound(lk);
             return Iterator(itMap);
          }
          itMap = val.pairs->find(key);
@@ -4522,18 +4512,18 @@ FFJSON::Iterator FFJSON::find (string key) {
          break;
       }
       case BIG_OBJECT: {
-         char& lc = key.back();
+         const char lc = key.back();
          ffmap::iterator itMap;
          if (lc=='*') {
-            key.pop_back();
-            itMap = val.pairs->lower_bound(key);
+            string lk = key.substr(0,key.length()-1);
+            itMap = val.pairs->lower_bound(lk);
             return Iterator(itMap);
          }
          itMap = val.pairs->find(key);
          return Iterator(itMap);
       }
       case ARRAY: {
-         uint ikey = stoi(key);
+         uint ikey = atoi(key.c_str());
          vector<FFJSON*>::iterator itVec;
          itVec = val.array->begin()+ikey;
          return Iterator(itVec);
@@ -4669,7 +4659,7 @@ bool operator == (const FFJSON& lhs, const FFJSON& rhs) {
    return (const void*)&lhs<(const void*)&rhs;
 }
 
-FFJSON* FFJSON::MarkAsUpdatable(string link, const FFJSON& rParent) {
+FFJSON* FFJSON::MarkAsUpdatable(string& link, const FFJSON& rParent) {
    if (rParent.isType(OBJECT) || rParent.isType(ARRAY)) {
       FFJSON* pOrigParent = const_cast<FFJSON*> (&rParent);
       FFJSON* pParent = pOrigParent;
@@ -4679,7 +4669,7 @@ FFJSON* FFJSON::MarkAsUpdatable(string link, const FFJSON& rParent) {
          if (pParent->isType(OBJECT) && pParent->val.pairs->find(prop[i]) ==
              pParent->val.pairs->end()) {
             return NULL;
-         } else if (pParent->isType(ARRAY) && stoi(prop[i]) >= pParent->size) {
+         } else if (pParent->isType(ARRAY) && atoi(prop[i].c_str()) >= pParent->size) {
             return NULL;
          }
          pParent = &((*pParent)[prop[i]]);
@@ -4691,7 +4681,7 @@ FFJSON* FFJSON::MarkAsUpdatable(string link, const FFJSON& rParent) {
             UpdatablePair.m_itMap = pParent->val.pairs->find(prop[i]);
             sm_mUpdateObjs[pParent].insert(UpdatablePair);
          } else if (pParent->isType(ARRAY)) {
-            UpdatablePair.m_uiIndex = stoi(prop[i]);
+            UpdatablePair.m_uiIndex = atoi(prop[i].c_str());
             sm_mUpdateObjs[pParent].insert(
                UpdatablePair);
          }
@@ -4706,7 +4696,7 @@ FFJSON* FFJSON::MarkAsUpdatable(string link, const FFJSON& rParent) {
    return NULL;
 }
 
-FFJSON* FFJSON::UnMarkUpdatable(string link, const FFJSON& rParent) {
+FFJSON* FFJSON::UnMarkUpdatable(string& link, const FFJSON& rParent) {
    FFJSON* pParent = const_cast<FFJSON*> (&rParent);
    if (rParent.isType(OBJECT) || rParent.isType(ARRAY)) {
       map<FFJSON*, FFJSON*> rOrigParent;
@@ -4716,7 +4706,7 @@ FFJSON* FFJSON::UnMarkUpdatable(string link, const FFJSON& rParent) {
          if (pParent->isType(OBJECT) && pParent->val.pairs->find(prop[i]) ==
              pParent->val.pairs->end()) {
             return NULL;
-         } else if (pParent->isType(ARRAY) && stoi(prop[i]) >=
+         } else if (pParent->isType(ARRAY) && atoi(prop[i].c_str()) >=
                     pParent->size) {
             return NULL;
          }
@@ -4732,7 +4722,7 @@ FFJSON* FFJSON::UnMarkUpdatable(string link, const FFJSON& rParent) {
                sm_mUpdateObjs[pParent].erase(pParent->val.pairs->
                                              find(sObjName));
             else if (pParent->isType(ARRAY) && sObjName.length() > 0)
-               sm_mUpdateObjs[pParent].erase(stoi(sObjName));
+               sm_mUpdateObjs[pParent].erase(atoi(sObjName.c_str()));
             if (rParent.getQType() == UPDATE) {
                return pParent;
             }
