@@ -2207,23 +2207,36 @@ void FFJSON::freeObj (bool bAssignment) {
    size =      0;
    flags &=    bAssignment?0xF000FF00:0;
 }
-
+bool isWhite (char c) {
+   switch (c) {
+      case ' ':
+      case '\n':
+      case '\t':
+      case '\r':
+         return true;
+      default:
+         return false;
+   }
+   return false;
+}
 void FFJSON::trimWhites (string& s) {
    int i = 0;
    int j = s.length() - 1;
-   while (s[i] == ' ' || s[i] == '\n' || s[i] == '\t' || s[i] == '\r') {
+   while (i<=j && isWhite(s[i])) {
       ++i;
    }
-   while (s[j] == ' ' || s[j] == '\n' || s[j] == '\t' || s[j] == '\r') {
+   while (i<=j && isWhite(s[j])) {
       --j;
    }
-   ++j;
-   s = i < j ? s.substr(i, j - i) : "";
+   s = i <= j ? s.substr(i, ++j - i) : "";
 }
 
 void FFJSON::trimQuotes (string& s) {
    int i = 0;
    int j = s.length() - 1;
+   if (j<=0) {
+      return;
+   }
    if (s[0] == '"') {
       ++i;
    }
@@ -3133,16 +3146,15 @@ string FFJSON::ConstructMultiLineStringArray (
                while (*pcNxtLn)pcNxtLn++;
                sProduct += ' ';
                sProduct.append(pcNwLn);
+               int cwidth =
+                  ((vClWidths[i+1]+(((i+1)<vpfMulLnStrs.size())?8:6))/8)*8-
+                  (int)(pcNxtLn-pcNwLn)-3+7;
                if (i < vpfMulLnStrs.size() - 1) {
                   sProduct += "\",";
-                  sProduct.append((((vClWidths[i + 1] + (((i + 1) <
-                                                          vpfMulLnStrs.size()) ? 8 : 6)) / 8)*8 - (int)
-                                   (pcNxtLn - pcNwLn) - 3 + 7) / 8, '\t');
+                  sProduct.append(cwidth/8, '\t');
                } else {
                   sProduct += '"';
-                  sProduct.append((((vClWidths[i + 1] + (((i + 1) <
-                                                          vpfMulLnStrs.size()) ? 8 : 6)) / 8)*8 - (int)
-                                   (pcNxtLn - pcNwLn) - 2 + 7) / 8, '\t');
+                  sProduct.append((cwidth+1)/8, '\t');
                }
                vpfMulLnStrs[i] = NULL;
             }
