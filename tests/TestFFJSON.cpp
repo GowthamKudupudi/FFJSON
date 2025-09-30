@@ -36,7 +36,7 @@ using namespace std;
 
 int child_exit_status = 0;
 FF_LOG_TYPE fflAllowedType = (FF_LOG_TYPE)(FFL_DEBUG | FFL_INFO);
-unsigned int fflAllowedLevel = 9;
+unsigned int fflAllowedBlks = 9;
 
 void mem_usage(double& vm_usage, double& resident_set) {
    vm_usage = 0.0;
@@ -518,6 +518,34 @@ void test21 () {
    cout << t2 << endl;
 }
 
+char* returnCharDeleteStr () {
+   string s("movable");
+   return const_cast<char*>(std::move(s).c_str());
+}
+
+void test22 () {
+   char* cs;
+   {
+      string s("movable");
+      //cs = returnCharDeleteStr(std::move(s));
+      //cs = const_cast<char*>(std::move(s).c_str());
+      cs = returnCharDeleteStr();
+      cout << s << endl;
+   }
+   string s2("movable2");
+   string s3("movable3");
+   string sa[100];
+   for (int i=0;i<100;++i) {
+      sa[i]=to_string(i)+"imovable";
+      cout << sa[i] <<endl;
+   }
+   cout << s2 << endl;
+   cout << s3 << endl;
+   cs[0]='L';
+   cout << cs << endl;
+   //free(cs);
+}
+
 int main (int argc, char** argv) {
    cout << "%SUITE_STARTING% TestFFJSON" << endl;
    cout << "%SUITE_STARTED%" << endl;
@@ -600,14 +628,14 @@ int main (int argc, char** argv) {
    ftsEnd.Update();
    ftsDiff = ftsEnd-ftsStart;
    cout << "%TEST_FINISHED% time=" << ftsDiff << " test10 " << endl;
-*/
+
    cout << "%TEST_STARTED% test11\n" << endl;
    ftsStart.Update();
    test11();
    ftsEnd.Update();
    ftsDiff = ftsEnd-ftsStart;
    cout << "%TEST_FINISHED% time=" << ftsDiff << " test11 " << endl;
-/*
+
    cout << "%TEST_STARTED% test12\n" << endl;
    ftsStart.Update();
    test12();
@@ -671,6 +699,13 @@ int main (int argc, char** argv) {
    ftsDiff = ftsEnd - ftsStart;
    cout << "%TEST_FINISHED% time=" << ftsDiff << " test21\n" << endl;
 */   
+   cout << "%TEST_STARTED% test22" << endl;
+   ftsStart.Update();
+   test22();
+   ftsEnd.Update();
+   ftsDiff = ftsEnd - ftsStart;
+   cout << "%TEST_FINISHED% time=" << ftsDiff << " test22" << endl;
+
    ftsSuiteEnd.Update();
    ftsDiff = ftsSuiteEnd-ftsSuiteStart;
    cout << "%SUITE_FINISHED% time=" << ftsDiff << endl;

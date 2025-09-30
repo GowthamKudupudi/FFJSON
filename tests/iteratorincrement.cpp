@@ -7,7 +7,7 @@ using namespace std;
 
 int child_exit_status=0;
 FF_LOG_TYPE fflAllowedType = (FF_LOG_TYPE)(FFL_DEBUG | FFL_INFO);
-unsigned int fflAllowedLevel = 9;
+unsigned int fflAllowedBlks = 9;
 
 struct MyStruct{
     template<typename T>

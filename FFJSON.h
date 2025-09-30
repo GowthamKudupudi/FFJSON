@@ -36,6 +36,7 @@ struct FFPtrCmp {
 typedef set<FFJSON*, FFPtrCmp> ffset;
 typedef map<string, FFJSON*> ffmap;
 typedef vector<FFJSON*> ffvec;
+typedef const char* ccp;
 
 class DLLExport FFJSON {
 public:
@@ -425,7 +426,18 @@ public:
    
    static const                  FeaturedMemType m_FM_LAST = FM_PARENT;
    static const char             OBJ_STR[10][15];
-   static map<string, uint8_t>   STR_OBJ;
+   static inline std::map<std::string, uint8_t> STR_OBJ = {
+      {"", UNDEFINED},
+      {"UNDEFINED", UNDEFINED},
+      {"STRING", STRING},
+      {"XML", XML},
+      {"NUMBER", NUMBER},
+      {"BOOL", BOOL},
+      {"OBJECT", OBJECT},
+      {"ARRAY", ARRAY},
+      {"TIME", TIME},
+      {"NUL", NUL}
+   };
    static FFJSON* MarkAsUpdatable(string& link, const FFJSON& rParent);
    static FFJSON* UnMarkUpdatable(string& link, const FFJSON& rParent);
    

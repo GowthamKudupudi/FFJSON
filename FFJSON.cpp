@@ -45,7 +45,6 @@ const char FFJSON::OBJ_STR[10][15] = {
    "BIG_OBJECT", //number of members are greater than MAX_ORDERED_MEMBERS; Its used only by Iterator.
    "NUL"
 };
-map<string, uint8_t> FFJSON::STR_OBJ;
 map<FFJSON*, set<FFJSON::FFJSONIterator> > FFJSON::sm_mUpdateObjs;
 
 FFJSON::FFJSON () {
@@ -657,7 +656,7 @@ void FFJSON::init (
             goto backyard;
          }
          case '"': {
-            i++;
+            ++i;
             setType(STRING);
             val.string = NULL;
             int nind = getIndent(ffjson.c_str(), &i, indent);
@@ -676,7 +675,7 @@ void FFJSON::init (
                   k = 0;
                }
                if (ffjson[i] == '\\' && nind == indent) {
-                  i++;
+                  ++i;
                   switch (ffjson[i]) {
                      case 'n':
                         buf[k] = '\n';
@@ -694,8 +693,8 @@ void FFJSON::init (
                         buf[k] = ffjson[i];
                         break;
                   }
-                  i++;
-                  k++;
+                  ++i;
+                  ++k;
                } else if (ffjson[i] == '\n') {
                   if (ffjson[i - 1] == '"')bMultiLineTxt = true;
                   if (!bMultiLineTxt) {
@@ -992,6 +991,7 @@ void FFJSON::init (
                                  --pfnl;
                               }
                               path.insert(0,pfn,pfnl+1);
+                              path.insert(pfnl+1,"./");
                               break;
                            }
                            lpobj=lpobj->pObj;
@@ -1005,7 +1005,6 @@ void FFJSON::init (
                      insertFeaturedMember(fm, FM_FILE);
                      if (ifs.is_open()) {
                         string ffjsonStr;
-                        strObjMapInit();
                         ifs.seekg(0, ios::end);
                         uint8_t t = UNDEFINED;
                         if (objCaster.length() > 0) {
@@ -2129,21 +2128,6 @@ int FFJSON::getIndent (const char* ffjson, int* ci, int indent) {
    return (indent + 1);
 }
 
-void FFJSON::strObjMapInit () {
-   if (STR_OBJ.size() == 0) {
-      STR_OBJ[string("")] = UNDEFINED;
-      STR_OBJ[string("UNDEFINED")] = UNDEFINED;
-      STR_OBJ[string("STRING")] = STRING;
-      STR_OBJ[string("XML")] = XML;
-      STR_OBJ[string("NUMBER")] = NUMBER;
-      STR_OBJ[string("BOOL")] = BOOL;
-      STR_OBJ[string("OBJECT")] = OBJECT;
-      STR_OBJ[string("ARRAY")] = ARRAY;
-      STR_OBJ[string("TIME")] = TIME;
-      STR_OBJ[string("NUL")] = NUL;
-   }
-}
-
 FFJSON::~FFJSON () {
    freeObj();
 }
@@ -2640,6 +2624,10 @@ string FFJSON::prettyString (
       const char* filename = getFeaturedMember(FM_FILE).m_sFileName;
       if (save)
          this->save(json, printComments, 0, pObj, false);
+      ccp rel = strstr(filename,"./");
+      if (rel) {
+         filename=rel+2;
+      }
       return string("file://")+filename;
    }
    if (!printFilePath && save) {
@@ -2676,7 +2664,21 @@ string FFJSON::prettyString (
             } else {
                i = size;
             }
-            ps.append(val.string, stringNail, i - stringNail);
+            int ii = stringNail;
+            while (ii < size) {
+               char ch = val.string[ii];
+               switch (ch) {
+                  case '"':
+                     if (hasNewLine) {
+                        break;
+                     }
+                  case '\\':
+                     ps+='\\';
+                     break;
+               }
+               ps+=ch;
+               ++ii;
+            }
             if (hasNewLine) {
                ps += '\n';
                ps.append(indent, '\t');
@@ -3234,7 +3236,7 @@ FFJSON& FFJSON::operator = (const char* s) {
    freeObj(true);
    int i = 0;
    int j = strlen(s);
-   if (s[0] == '<') {
+   if (s[0] == '<' && s[j-1]=='>') {
       i++;
       int xmlNail = i;
       string xmlTag;
@@ -4770,12 +4772,12 @@ int FFJSON::save (
    bool json, bool printComments, unsigned int indent,
    FFJSONPrettyPrintPObj* pObj, bool printFilePath, bool save
 ) const {
-   string sOut = prettyString(json, printComments, 0, pObj,
-                              false, true);
+   string sOut = json?stringify(json):
+      prettyString(json, printComments, 0, pObj,false, true);
    if (isEFlagSet(FILE)) {
       const char* fn = getFeaturedMember(FM_FILE).m_sFileName;
       ofstream ofs(fn, ios::out|ios::trunc);
-      if(ofs.is_open()){
+      if (ofs.is_open()) {
          ofs << sOut;
          ofs.close();
          return sOut.length();
